@@ -25,6 +25,7 @@ from utils import (
     PromptPayload,
     ImageResult,
     run_logger,
+    __version__,
 )
 from config import load_config, get_config_value
 from article_analyzer import analyze_article
@@ -37,7 +38,7 @@ from evolver import trigger_evolution, apply_evolution, get_evolution_history
 
 def print_banner():
     print("=" * 60)
-    print("      🎨 Welcome to Creative Visual Skill (CVSkill) 🎨")
+    print(f"      🎨 Welcome to Creative Visual Skill (CVSkill) v{__version__} 🎨")
     print("=" * 60)
 
 

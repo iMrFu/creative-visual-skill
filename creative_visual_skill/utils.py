@@ -11,6 +11,8 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
+__version__ = "1.0.0"
+
 # ---------------------------------------------------------------------------
 # 项目根目录（creative_visual_skill/）
 # ---------------------------------------------------------------------------

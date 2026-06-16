@@ -13,6 +13,7 @@ CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
 # ===========================================================================
 DEFAULT_CONFIG = {
     # --- 通用 ---
+    "version": "1.0.0",
     "default_provider": "local",
     "default_cover_ratio": "2.35:1",
     "default_content_ratio": "16:9",
