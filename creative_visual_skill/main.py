@@ -7,6 +7,7 @@ Creative Visual Skill — 入口与主控脚本
 
 import os
 import sys
+import time
 import argparse
 from dotenv import load_dotenv
 
@@ -149,6 +150,53 @@ def run_pipeline(
             all_success = False
             print(f"  ❌ 任务 {idx} ({ratio_str}): 失败! 原因: {res.error_message}")
             run_logger.error(f"Pipeline 生图失败 ({ratio_str}) -> {res.error_message}")
+
+    # ---- [新增] Agent 创作评分系统 ----
+    if all_success:
+        print("\n🤖 [Agent 创作评分系统] 请为本次生成的图片打分：")
+        print("   (1分: 极不满意，5分: 非常满意。若 10 秒内直接回车，则默认评分 5 分)")
+        
+        # 带有默认超时的非阻塞键盘等待 (若无输入则默认满意)
+        import select
+        
+        # 兼容 Windows 系统的 KB 输入超时逻辑
+        import msvcrt
+        print("   请输入评分 (1-5, 默认 5): ", end="", flush=True)
+        
+        score_input = ""
+        start_time = time.time()
+        timeout = 10.0
+        
+        while time.time() - start_time < timeout:
+            if msvcrt.kbhit():
+                char = msvcrt.getwche()
+                if char in ('\r', '\n'):
+                    break
+                score_input += char
+            time.sleep(0.05)
+            
+        print() # 换行
+        score_input = score_input.strip()
+        
+        score = 5
+        if score_input:
+            try:
+                parsed_score = int(score_input)
+                if 1 <= parsed_score <= 5:
+                    score = parsed_score
+                else:
+                    print("   ⚠️ 输入不在 1-5 范围内，默认使用评分 5 分。")
+            except ValueError:
+                print("   ⚠️ 输入无效，默认使用评分 5 分。")
+        else:
+            print("   ⏳ 超时未输入或直接回车，默认用户满意（评分 5 分）。")
+            
+        run_logger.info(f"Agent 创作评分 | 用户给分: {score}/5")
+        print(f"   🎯 记录评分: {score} 分。这是 CVSkill 自我优化系统的一部分，我们会根据评分与运行日志不断自我演进！")
+        
+        # 如果评分较低，自动提示进行自进化调优
+        if score <= 3:
+            print("   💡 检测到您对结果不够满意，您可以随时使用 `python main.py --optimize <反馈>` 告诉我们具体原因以进行优化调整。")
 
     return all_success
 

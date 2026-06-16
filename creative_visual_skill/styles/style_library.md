@@ -94,31 +94,3 @@
   "examples": []
 }
 ```
-
-
-## Style
-
-```json
-{
-  "style_name": "新古典风，配色为[蓝色, 金色]，背景是星空，构图是三分法，负向词为[变形, 模糊]",
-  "subject_placeholder": "[SUBJECT]",
-  "composition": "三分法",
-  "colors": [
-    "金色",
-    "蓝"
-  ],
-  "background": "简约背景",
-  "negative": [
-    "低质量",
-    "模糊",
-    "变形",
-    "水印"
-  ],
-  "tags": [
-    "三分法",
-    "金色",
-    "蓝"
-  ],
-  "examples": []
-}
-```
