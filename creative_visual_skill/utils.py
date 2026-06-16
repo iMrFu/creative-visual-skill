@@ -1,0 +1,216 @@
+"""
+Creative Visual Skill — 通用工具模块
+数据类定义 + 日志 + 文件操作工具
+"""
+
+import os
+import json
+import logging
+import shutil
+from dataclasses import dataclass, field, asdict
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+
+# ---------------------------------------------------------------------------
+# 项目根目录（creative_visual_skill/）
+# ---------------------------------------------------------------------------
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+STYLES_DIR = os.path.join(PROJECT_ROOT, "styles")
+STYLES_IMAGE_DIR = os.path.join(STYLES_DIR, "image")
+OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
+LOGS_DIR = os.path.join(PROJECT_ROOT, "logs")
+WORKFLOWS_DIR = os.path.join(PROJECT_ROOT, "workflows")
+
+# ---------------------------------------------------------------------------
+# 确保关键目录存在
+# ---------------------------------------------------------------------------
+for _dir in [STYLES_DIR, STYLES_IMAGE_DIR, OUTPUT_DIR, LOGS_DIR, WORKFLOWS_DIR]:
+    os.makedirs(_dir, exist_ok=True)
+
+
+# ===========================================================================
+# 核心数据结构
+# ===========================================================================
+
+@dataclass
+class ArticleInfo:
+    """文章分析结果"""
+    topic: str = ""          # 文章主题类别
+    emotion: str = ""        # 情绪基调
+    keywords: List[str] = field(default_factory=list)  # 核心关键词
+    subject: str = ""        # 视觉主体语义
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ArticleInfo":
+        return cls(
+            topic=data.get("topic", ""),
+            emotion=data.get("emotion", ""),
+            keywords=data.get("keywords", []),
+            subject=data.get("subject", ""),
+        )
+
+
+@dataclass
+class StyleInfo:
+    """风格模板结构"""
+    style_name: str = ""
+    subject_placeholder: str = "[SUBJECT]"
+    composition: str = ""
+    colors: List[str] = field(default_factory=list)
+    background: str = ""
+    negative: List[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
+    examples: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "StyleInfo":
+        return cls(
+            style_name=data.get("style_name", ""),
+            subject_placeholder=data.get("subject_placeholder", "[SUBJECT]"),
+            composition=data.get("composition", ""),
+            colors=data.get("colors", []),
+            background=data.get("background", ""),
+            negative=data.get("negative", []),
+            tags=data.get("tags", []),
+            examples=data.get("examples", []),
+        )
+
+
+@dataclass
+class PromptPayload:
+    """JSON 提示词中台结构 — 系统唯一真相源"""
+    subject: str = ""
+    style: str = ""
+    composition: str = ""
+    colors: List[str] = field(default_factory=list)
+    background: str = ""
+    ratio: str = "2.35:1"
+    negative: List[str] = field(default_factory=list)
+    tags: List[str] = field(default_factory=list)
+    examples: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "PromptPayload":
+        return cls(
+            subject=data.get("subject", ""),
+            style=data.get("style", ""),
+            composition=data.get("composition", ""),
+            colors=data.get("colors", []),
+            background=data.get("background", ""),
+            ratio=data.get("ratio", "2.35:1"),
+            negative=data.get("negative", []),
+            tags=data.get("tags", []),
+            examples=data.get("examples", []),
+        )
+
+
+@dataclass
+class ImageResult:
+    """生图结果"""
+    success: bool = False
+    image_path: str = ""         # 输出图片路径
+    prompt_used: str = ""        # 实际使用的提示词
+    error_message: str = ""      # 错误信息
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+# ===========================================================================
+# 日志工具
+# ===========================================================================
+
+def setup_logger(name: str, log_file: str, level: int = logging.INFO) -> logging.Logger:
+    """创建并返回一个带文件 + 控制台输出的 logger"""
+    logger = logging.getLogger(name)
+    if logger.handlers:
+        return logger  # 避免重复添加 handler
+
+    logger.setLevel(level)
+    formatter = logging.Formatter(
+        "[%(asctime)s] %(levelname)s [%(name)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # 文件 handler
+    fh = logging.FileHandler(log_file, encoding="utf-8")
+    fh.setLevel(level)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+    # 控制台 handler
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    return logger
+
+
+# 全局 logger
+run_logger = setup_logger("run", os.path.join(LOGS_DIR, "run.log"))
+evolution_logger = setup_logger("evolution", os.path.join(LOGS_DIR, "evolution.log"))
+
+
+# ===========================================================================
+# 文件操作工具
+# ===========================================================================
+
+def read_text_file(path: str) -> str:
+    """安全读取文本文件"""
+    if not os.path.exists(path):
+        return ""
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def write_text_file(path: str, content: str) -> None:
+    """写入文本文件（自动创建目录）"""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
+
+
+def append_text_file(path: str, content: str) -> None:
+    """追加写入文本文件"""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(content)
+
+
+def read_json_file(path: str) -> dict:
+    """安全读取 JSON 文件"""
+    if not os.path.exists(path):
+        return {}
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def write_json_file(path: str, data: dict) -> None:
+    """写入 JSON 文件"""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def copy_file(src: str, dst: str) -> str:
+    """复制文件，返回目标路径"""
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    shutil.copy2(src, dst)
+    return dst
+
+
+def generate_timestamped_filename(prefix: str = "img", ext: str = ".png") -> str:
+    """生成带时间戳的文件名"""
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    return f"{prefix}_{ts}{ext}"

@@ -1,0 +1,13 @@
+# Creative Visual Skill — 依赖清单
+# V1 核心依赖
+jieba>=0.42.1               # 中文分词（文章分析）
+requests>=2.31.0            # HTTP 请求（ComfyUI API）
+Pillow>=10.0.0              # 图片处理
+python-dotenv>=1.0.0        # 环境变量管理
+
+# V2 云端 API（按需安装）
+openai>=1.30.0              # OpenAI API
+google-genai>=1.0.0         # Gemini API
+
+# 测试
+pytest>=8.0.0

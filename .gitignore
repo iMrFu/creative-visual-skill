@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# CVSkill specific
+creative_visual_skill/logs/*.log
+creative_visual_skill/output/*.png
+.env
+
+# Keep directories but ignore contents
+!creative_visual_skill/styles/image/.gitkeep
+!creative_visual_skill/output/.gitkeep

@@ -1,0 +1,57 @@
+{
+  "default_provider": "local",
+  "default_cover_ratio": "2.35:1",
+  "default_content_ratio": "16:9",
+  "comfyui_server": "http://127.0.0.1:8188",
+  "comfyui_timeout": 300,
+  "comfyui_poll_interval": 2,
+  "comfyui_workflow": "sdxl_basic",
+  "comfyui_checkpoint": "",
+  "comfyui_steps": 30,
+  "comfyui_cfg": 7.0,
+  "comfyui_sampler": "euler_ancestral",
+  "comfyui_scheduler": "normal",
+  "openai_model": "gpt-image-1",
+  "openai_size_cover": "1536x1024",
+  "openai_size_content": "1536x1024",
+  "openai_quality": "high",
+  "gemini_model": "gemini-2.0-flash-preview-image-generation",
+  "gemini_aspect_cover": "16:9",
+  "gemini_aspect_content": "16:9",
+  "llm_provider": "openai",
+  "llm_model": "gpt-4o-mini",
+  "gemini_llm_model": "gemini-2.0-flash",
+  "TARGET_KEYWORDS": [
+    "保存到视觉库",
+    "添加封面素材",
+    "保存素材",
+    "保存到内容库",
+    "存入素材",
+    "视觉策划加入内容库"
+  ],
+  "whitespace_weight": 1.2,
+  "max_elements_per_image": 6,
+  "force_horizontal_whitespace_for_cover": true,
+  "ratio_dimensions": {
+    "2.35:1": {
+      "width": 1024,
+      "height": 440
+    },
+    "16:9": {
+      "width": 1344,
+      "height": 768
+    },
+    "1:1": {
+      "width": 1024,
+      "height": 1024
+    },
+    "3:2": {
+      "width": 1216,
+      "height": 832
+    },
+    "21:9": {
+      "width": 1536,
+      "height": 640
+    }
+  }
+}
