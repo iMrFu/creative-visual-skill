@@ -19,6 +19,7 @@ from .utils import (
     copy_file,
     generate_timestamped_filename,
 )
+from .config import load_config
 
 # ---------------------------------------------------------------------------
 # 风格库 Markdown 文件路径
@@ -76,17 +77,22 @@ def list_styles() -> List[StyleInfo]:
     return _parse_styles_from_markdown(md_text)
 
 
-def select_style(article_info: ArticleInfo) -> StyleInfo:
+def select_style(
+    article_info: ArticleInfo,
+    use_llm: bool = False,
+    llm_provider: str = "openai",
+) -> StyleInfo:
     """
     根据文章信息自动匹配最佳风格。
 
     匹配策略：
-    - 将文章的 keywords + topic + emotion 合并为候选词集合
-    - 对每个风格的 tags 计算与候选词的交集大小作为得分
-    - 返回得分最高的风格；若平局则返回第一个匹配项
+    - V2 LLM 模式（use_llm=True）：调用大模型进行意图路由并生成视觉策划说明。
+    - V1 规则模式（use_llm=False / 失败回退）：基于关键词与标签的交集匹配。
 
     Args:
         article_info: 文章分析结果
+        use_llm:      是否使用大模型进行匹配
+        llm_provider: 大模型服务商
 
     Returns:
         匹配得分最高的 StyleInfo；若无风格可用则返回空 StyleInfo
@@ -96,6 +102,102 @@ def select_style(article_info: ArticleInfo) -> StyleInfo:
         run_logger.warning("风格库为空，返回默认空风格")
         return StyleInfo()
 
+    if use_llm:
+        config = load_config()
+
+        # 提取可用风格的基本信息，用于传递给大模型减小 token 并防止越界
+        style_list_for_llm = []
+        for s in styles:
+            style_list_for_llm.append({
+                "style_name": s.style_name,
+                "tags": s.tags,
+                "composition_short": s.composition_short or s.composition[:100],
+            })
+
+        system_prompt = (
+            "你是一个顶尖的自媒体视觉创意总监。\n"
+            "用户会给你一篇自媒体文章的解析信息（ArticleInfo JSON），以及当前风格库中可用的生图风格列表。\n"
+            "请分析文章的主题和情感，在可用的风格列表中选择一个最能表达文章内涵、甚至能产生奇妙跨界视觉张力的最佳风格，并给出你的专业策划理由。\n\n"
+            "【大模型匹配原则】\n"
+            "1. 行业与语义对齐：当文章主题涉及汽车、宝马、车等，智能匹配「汽车广告大片风」；当涉及科技、AI，优先匹配「赛博朋克霓虹风」；涉及自然、唯美，匹配「清新水彩插画风」等。\n"
+            "2. 跨界创意推荐（如果合适）：你可以在“保守匹配”与“跨界碰撞”之间权衡。如果跨界碰撞（例如冷酷数据匹配温馨手绘，或者亲子陪伴匹配赛博朋克）能带来惊艳反差感，且契合情绪，你可以做出大胆提议。\n"
+            "3. 选取的风格必须是当前风格列表中已经存在的名字，不可凭空捏造。\n\n"
+            "请严格返回以下 JSON 格式（不要有任何解释性文字或 Markdown 代码块包裹）：\n"
+            "{\n"
+            '  "selected_style_name": "选中的风格名称（必须是风格列表里已有的精确名字）",\n'
+            '  "match_strategy": "conservative" 或 "creative_clash",\n'
+            '  "artistic_rationale": "用一两句充满策划设计感的话，解释为什么选择这种风格，以及这种风格将如何提升文章的视觉表现力和创意度。"\n'
+            "}"
+        )
+
+        user_prompt = (
+            f"【文章解析信息 (ArticleInfo)】\n"
+            f"{json.dumps(article_info.to_dict(), ensure_ascii=False, indent=2)}\n\n"
+            f"【可用风格选项列表】\n"
+            f"{json.dumps(style_list_for_llm, ensure_ascii=False, indent=2)}"
+        )
+
+        try:
+            raw = ""
+            if llm_provider == "openai":
+                import openai
+                model = config.get("llm_model", "gpt-4o-mini")
+                client = openai.OpenAI(base_url=config.get("openai_base_url", "") or None)
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0.3,
+                    max_tokens=600,
+                    response_format={"type": "json_object"} if model != "gpt-3.5-turbo" else None,
+                )
+                raw = response.choices[0].message.content.strip()
+            elif llm_provider == "gemini":
+                from google import genai
+                from google.genai import types
+                model_name = config.get("gemini_llm_model", "gemini-2.0-flash")
+                client = genai.Client()
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[system_prompt, user_prompt],
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.3,
+                    )
+                )
+                raw = response.text.strip()
+
+            if raw:
+                # 提取 JSON（防止有外部 markdown 代码块）
+                json_match = re.search(r'\{[\s\S]*\}', raw)
+                if json_match:
+                    res_data = json.loads(json_match.group())
+                    sel_name = res_data.get("selected_style_name", "").strip()
+                    rationale = res_data.get("artistic_rationale", "").strip()
+                    strategy = res_data.get("match_strategy", "conservative").strip()
+
+                    # 在 styles 中寻找匹配的风格
+                    for s in styles:
+                        if s.style_name.strip() == sel_name:
+                            # 控制台打印高亮策划词
+                            strategy_cn = "经典契合" if strategy == "conservative" else "跨界碰撞"
+                            print("\n" + "🎨" * 35)
+                            print(f"💡 CVSkill 创意策划（AI 视觉总监提议）：")
+                            print(f"   - 匹配风格：【{s.style_name}】")
+                            print(f"   - 匹配策略：【{strategy_cn}】")
+                            print(f"   - 策划理由：{rationale}")
+                            print("🎨" * 35 + "\n")
+
+                            run_logger.info(f"LLM 智能风格选择成功: 「{s.style_name}」, 策略: {strategy}")
+                            return s
+
+                    run_logger.warning(f"LLM 返回了未知的风格名字: '{sel_name}'，将退避到 V1 匹配")
+        except Exception as e:
+            run_logger.warning(f"LLM 智能风格选择失败 ({llm_provider}): {e}，将退避到 V1 匹配")
+
+    # ---- V1 规则匹配（降级通道） ----
     # 构建文章候选词集合（全部转小写以统一比较）
     candidate_words: set = set()
     for kw in article_info.keywords:

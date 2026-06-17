@@ -5,6 +5,7 @@ Tests for Module B: style_library — 风格库管理
 import sys
 import os
 import pytest
+from unittest import mock
 
 # 将项目根目录加入 sys.path，确保能导入项目模块
 from creative_visual_skill.utils import StyleInfo, ArticleInfo, STYLES_DIR, read_text_file
@@ -24,9 +25,9 @@ class TestListStyles:
     """测试 list_styles 加载风格数量"""
 
     def test_list_styles(self):
-        """验证能加载 6 个预设风格"""
+        """验证能加载所有预设风格（至少 7 个）"""
         styles = list_styles()
-        assert len(styles) == 6, f"期望 6 个风格，实际得到 {len(styles)}"
+        assert len(styles) >= 7, f"期望至少 7 个风格，实际得到 {len(styles)}"
 
     def test_style_names_are_unique(self):
         """验证风格名称不重复"""
@@ -111,6 +112,45 @@ class TestSelectStyle:
         )
         matched = select_style(article)
         assert matched.style_name, "应返回一个非空风格"
+
+    @mock.patch("openai.OpenAI")
+    @mock.patch("creative_visual_skill.style_library.load_config")
+    def test_select_style_llm_enhanced(self, mock_load_config, mock_openai_class):
+        """测试使用 LLM 增强匹配智能路由到汽车广告大片风"""
+        mock_load_config.return_value = {
+            "llm_provider": "openai",
+            "llm_model": "gpt-4o-mini",
+        }
+        mock_client = mock.MagicMock()
+        mock_openai_class.return_value = mock_client
+
+        mock_response = mock.MagicMock()
+        mock_choice = mock.MagicMock()
+        mock_message = mock.MagicMock()
+        # 模拟 LLM 成功返回 JSON 响应
+        mock_message.content = (
+            '{\n'
+            '  "selected_style_name": "汽车广告大片风",\n'
+            '  "match_strategy": "conservative",\n'
+            '  "artistic_rationale": "选择了汽车广告大片风以匹配车辆主体。"\n'
+            '}'
+        )
+        mock_choice.message = mock_message
+        mock_response.choices = [mock_choice]
+        mock_client.chat.completions.create.return_value = mock_response
+
+        article = ArticleInfo(
+            topic="汽车",
+            emotion="passion",
+            keywords=["宝马", "上市", "全新", "M4"],
+            subject="宝马M4",
+        )
+
+        matched = select_style(article, use_llm=True, llm_provider="openai")
+        
+        # 验证是否能够成功通过 LLM 选中该风格
+        assert matched.style_name == "汽车广告大片风"
+        mock_client.chat.completions.create.assert_called_once()
 
 
 class TestAddStyle:

@@ -133,7 +133,11 @@ def run_pipeline(
 
     if not style_info:
         print("\n[Step 2] 自动匹配最佳风格...")
-        style_info = select_style(article_info)
+        style_info = select_style(
+            article_info,
+            use_llm=use_llm,
+            llm_provider=config.get("llm_provider", "openai"),
+        )
         print(f"  - 最佳匹配风格: 【{style_info.style_name}】")
 
     # 确定生成的比例

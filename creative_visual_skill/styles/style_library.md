@@ -100,3 +100,19 @@
   "examples": ["styles/image/japanese_sample.png"]
 }
 ```
+
+## Style
+
+```json
+{
+  "style_name": "汽车广告大片风",
+  "subject_placeholder": "[SUBJECT]",
+  "composition": "Cinematic automotive billboard poster composition. [SUBJECT] parked center-frame with dominant stance and ultra controlled layout. Dramatic studio lighting setup with primary key light defining body panels and precise rim lighting carving silhouette through high contrast shadow falloff. Massive billboard-style typography composition: bold condensed sans-serif brand text filling entire background wall behind vehicle, perfectly centered edge-to-edge, thin vertical dark lines slicing through each letter evenly with consistent spacing. Environment designed to match brand mood, seamlessly fading into deep gradient background with zero clutter. Ground surface featuring subtle realistic reflections with controlled diffusion and no noise. Optional atmosphere haze only at ground level for depth. Top right corner: small elegant brand logo paired with minimal uppercase signature text aligned cleanly. No extra taglines, no performance specs, no additional typography, no random elements. Maintain premium minimal billboard aesthetic throughout. Hyper-detailed photorealism, ultra sharp reflections, realistic paint microtexture, cinematic color grade matching environment. Perfectly balanced symmetrical professional automotive advertising layout.",
+  "composition_short": "Cinematic automotive billboard poster, [SUBJECT] center-frame dominant stance, dramatic studio key+rim lighting, massive bold condensed sans-serif brand typography filling background wall, premium minimal billboard aesthetic, hyper-detailed photorealistic, symmetrical advertising layout.",
+  "colors": ["cool studio blue", "warm amber gold", "deep carbon black", "racing red metallic", "matte concrete grey", "gloss white"],
+  "background": "Deep gradient background seamlessly matching brand environment mood, zero clutter, optional controlled ground-level haze for depth perception, clean professional advertising backdrop.",
+  "negative": ["hand-drawn", "watercolor", "cartoon", "flat design", "vintage scrapbook", "kawaii", "collage", "soft pastel", "extra taglines", "performance specs text", "random decorative elements", "cluttered background"],
+  "tags": ["automotive", "billboard", "photorealistic", "cinematic", "advertising", "premium", "car-poster", "studio-lighting", "汽车广告", "大片", "商业摄影"],
+  "examples": ["styles/image/automotive_billboard_sample.jpg"]
+}
+```
