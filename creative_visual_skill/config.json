@@ -16,6 +16,7 @@
   "openai_size_cover": "1536x1024",
   "openai_size_content": "1536x1024",
   "openai_quality": "high",
+  "openai_base_url": "",
   "gemini_model": "gemini-2.0-flash-preview-image-generation",
   "gemini_aspect_cover": "16:9",
   "gemini_aspect_content": "16:9",

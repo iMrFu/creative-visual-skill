@@ -7,11 +7,8 @@ import os
 import pytest
 from unittest import mock
 
-# 将项目根目录加入 sys.path，确保能导入项目模块
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from utils import StyleInfo, STYLES_DIR
-from save_style import (
+from creative_visual_skill.utils import StyleInfo, STYLES_DIR
+from creative_visual_skill.save_style import (
     _is_image_path,
     _parse_v1_rule_based,
     check_save_trigger,
@@ -19,7 +16,7 @@ from save_style import (
     confirm_and_save,
     process_save_request,
 )
-from style_library import STYLE_LIBRARY_PATH, read_text_file
+from creative_visual_skill.style_library import STYLE_LIBRARY_PATH, read_text_file
 
 
 class TestSaveStyleTriggers:
@@ -53,8 +50,8 @@ class TestIsImagePath:
 class TestSubjectSelfHealing:
     """测试缺少占位符的自愈与重构"""
 
-    @mock.patch("save_style._add_subject_placeholder_via_llm")
-    @mock.patch("save_style.add_style_to_library")
+    @mock.patch("creative_visual_skill.save_style._add_subject_placeholder_via_llm")
+    @mock.patch("creative_visual_skill.save_style.add_style_to_library")
     def test_confirm_and_save_placeholder_auto_insert(self, mock_add_to_lib, mock_llm_insert):
         # 构造一个没有 [SUBJECT] 的风格
         style_without_subject = StyleInfo(
@@ -90,7 +87,7 @@ class TestSubjectSelfHealing:
             # 最终被保存的应该是 healed_style
             mock_add_to_lib.assert_called_once_with(healed_style)
 
-    @mock.patch("save_style.add_style_to_library")
+    @mock.patch("creative_visual_skill.save_style.add_style_to_library")
     def test_confirm_and_save_keep_fixed(self, mock_add_to_lib):
         # 构造一个没有 [SUBJECT] 的风格
         style_without_subject = StyleInfo(
@@ -115,9 +112,9 @@ class TestSubjectSelfHealing:
 class TestImageToStyleFlow:
     """测试从图片反推风格的完整流程"""
 
-    @mock.patch("save_style._parse_style_from_image")
-    @mock.patch("save_style.save_image_to_library")
-    @mock.patch("save_style.confirm_and_save")
+    @mock.patch("creative_visual_skill.save_style._parse_style_from_image")
+    @mock.patch("creative_visual_skill.save_style.save_image_to_library")
+    @mock.patch("creative_visual_skill.save_style.confirm_and_save")
     def test_process_save_request_with_image(
         self, mock_confirm, mock_save_img, mock_parse_img, tmp_path
     ):

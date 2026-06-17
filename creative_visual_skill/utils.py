@@ -74,6 +74,7 @@ class StyleInfo:
     style_name: str = ""
     subject_placeholder: str = "[SUBJECT]"
     composition: str = ""
+    composition_short: str = ""  # CLIP 限制用短描述
     colors: List[str] = field(default_factory=list)
     background: str = ""
     negative: List[str] = field(default_factory=list)
@@ -89,6 +90,7 @@ class StyleInfo:
             style_name=data.get("style_name", ""),
             subject_placeholder=data.get("subject_placeholder", "[SUBJECT]"),
             composition=data.get("composition", ""),
+            composition_short=data.get("composition_short", ""),
             colors=data.get("colors", []),
             background=data.get("background", ""),
             negative=data.get("negative", []),
@@ -97,12 +99,14 @@ class StyleInfo:
         )
 
 
+
 @dataclass
 class PromptPayload:
     """JSON 提示词中台结构 — 系统唯一真相源"""
     subject: str = ""
     style: str = ""
     composition: str = ""
+    composition_short: str = ""  # CLIP 限制用短描述
     colors: List[str] = field(default_factory=list)
     background: str = ""
     ratio: str = "2.35:1"
@@ -120,6 +124,7 @@ class PromptPayload:
             subject=data.get("subject", ""),
             style=data.get("style", ""),
             composition=data.get("composition", ""),
+            composition_short=data.get("composition_short", ""),
             colors=data.get("colors", []),
             background=data.get("background", ""),
             ratio=data.get("ratio", "2.35:1"),
@@ -128,6 +133,7 @@ class PromptPayload:
             examples=data.get("examples", []),
             overrides=data.get("overrides", {}),
         )
+
 
 
 

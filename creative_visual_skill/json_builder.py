@@ -4,7 +4,7 @@ Creative Visual Skill — Module C: JSON 中台构建
 合并为系统唯一真相源 PromptPayload。
 """
 
-from utils import ArticleInfo, StyleInfo, PromptPayload, run_logger
+from .utils import ArticleInfo, StyleInfo, PromptPayload, run_logger
 
 
 # ===========================================================================
@@ -23,7 +23,7 @@ def check_memory_for_overrides(style_name: str) -> dict:
         dict: 合并后的配置覆盖参数字典，如 {"whitespace_weight": 1.4}
     """
     import os
-    from utils import MEMORY_HISTORY_DIR, read_json_file
+    from .utils import MEMORY_HISTORY_DIR, read_json_file
 
     overrides = {}
     if not os.path.exists(MEMORY_HISTORY_DIR):
@@ -93,6 +93,7 @@ def build_payload(
     placeholder = style_info.subject_placeholder or "[SUBJECT]"
     composition = style_info.composition.replace(placeholder, article_info.subject)
     background = style_info.background.replace(placeholder, article_info.subject)
+    composition_short = (style_info.composition_short or "").replace(placeholder, article_info.subject)
 
     run_logger.info(
         "build_payload | subject='%s', style='%s', ratio='%s'",
@@ -101,7 +102,9 @@ def build_payload(
         ratio,
     )
     run_logger.debug(
-        "build_payload | composition after replacement: '%s'", composition
+        "build_payload | composition after replacement: '%s', composition_short: '%s'",
+        composition,
+        composition_short,
     )
 
     # ---- 2. 检索记忆库获取覆盖项 ----
@@ -112,6 +115,7 @@ def build_payload(
         subject=article_info.subject,
         style=style_info.style_name,
         composition=composition,
+        composition_short=composition_short,
         colors=list(style_info.colors),       # 防止引用共享
         background=background,
         ratio=ratio,

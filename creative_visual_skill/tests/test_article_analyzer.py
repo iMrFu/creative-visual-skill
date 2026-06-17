@@ -5,10 +5,8 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from article_analyzer import analyze_article
-from utils import ArticleInfo
+from creative_visual_skill.article_analyzer import analyze_article
+from creative_visual_skill.utils import ArticleInfo
 
 
 class TestArticleAnalyzerBasic:

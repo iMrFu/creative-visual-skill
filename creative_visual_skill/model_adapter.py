@@ -8,8 +8,8 @@ Creative Visual Skill — Module D: 模型适配器
 
 from typing import Union, Tuple
 
-from utils import PromptPayload, run_logger
-from config import load_config
+from .utils import PromptPayload, run_logger
+from .config import load_config
 
 
 # ===========================================================================
@@ -17,8 +17,8 @@ from config import load_config
 # ===========================================================================
 
 def build_prompt(
-    provider: str,
     payload: PromptPayload,
+    provider: str = "local",
 ) -> Union[Tuple[str, str], str]:
     """
     根据 provider 将 PromptPayload 适配为目标模型的 prompt。
@@ -64,8 +64,11 @@ def _build_local_prompt(payload: PromptPayload) -> Tuple[str, str]:
     # ---- 色彩描述 ----
     color_desc = " and ".join(payload.colors) if payload.colors else "harmonious"
 
-    # ---- 缩减超长 composition ----
-    short_comp = _shorten_composition(payload.composition, max_chars=400)
+    # ---- 优先使用紧凑短描述，否则截断 composition ----
+    if getattr(payload, "composition_short", None):
+        short_comp = payload.composition_short
+    else:
+        short_comp = _shorten_composition(payload.composition, max_chars=400)
 
     # ---- 基础标签序列 ----
     parts = [

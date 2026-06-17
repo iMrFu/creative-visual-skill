@@ -7,10 +7,8 @@ import sys
 import pytest
 
 # 将项目根目录加入 sys.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from utils import PromptPayload
-from model_adapter import build_prompt
+from creative_visual_skill.utils import PromptPayload
+from creative_visual_skill.model_adapter import build_prompt
 
 
 # ===========================================================================
@@ -57,7 +55,7 @@ class TestLocalPrompt:
     """验证 local provider 输出逗号分隔标签"""
 
     def test_local_prompt_format(self, cover_payload):
-        result = build_prompt("local", cover_payload)
+        result = build_prompt(cover_payload, "local")
 
         # 返回 tuple: (positive, negative)
         assert isinstance(result, tuple)
@@ -81,7 +79,7 @@ class TestLocalPrompt:
 
     def test_local_cover_horizontal(self, cover_payload):
         """ratio='2.35:1' 时应追加 horizontal layout 相关标签"""
-        positive, _ = build_prompt("local", cover_payload)
+        positive, _ = build_prompt(cover_payload, "local")
 
         assert "horizontal layout" in positive
         assert "ultra-wide cinematic composition" in positive
@@ -90,7 +88,7 @@ class TestLocalPrompt:
 
     def test_local_content_widescreen(self, content_payload):
         """ratio='16:9' 时应追加 widescreen 相关标签"""
-        positive, _ = build_prompt("local", content_payload)
+        positive, _ = build_prompt(content_payload, "local")
 
         assert "wide angle shot" in positive
         assert "cinematic widescreen ratio" in positive
@@ -109,7 +107,7 @@ class TestOpenAIPrompt:
     """验证 openai provider 输出自然语言字符串"""
 
     def test_openai_prompt_format(self, cover_payload):
-        result = build_prompt("openai", cover_payload)
+        result = build_prompt(cover_payload, "openai")
 
         # 返回纯字符串
         assert isinstance(result, str)
@@ -132,7 +130,7 @@ class TestGeminiPrompt:
     """验证 gemini provider 输出自然语言字符串（含中文语境）"""
 
     def test_gemini_prompt_format(self, cover_payload):
-        result = build_prompt("gemini", cover_payload)
+        result = build_prompt(cover_payload, "gemini")
 
         # 返回纯字符串
         assert isinstance(result, str)
@@ -154,7 +152,7 @@ class TestNegativePrompt:
     """验证 negative 条目被正确包含在 local 负向提示词中"""
 
     def test_negative_prompt(self, cover_payload):
-        _, negative = build_prompt("local", cover_payload)
+        _, negative = build_prompt(cover_payload, "local")
 
         assert isinstance(negative, str)
         assert "blurry" in negative
@@ -181,7 +179,7 @@ class TestPromptBuildingEdgeCases:
             background="grass",
             ratio="1:1"
         )
-        positive, _ = build_prompt("local", payload)
+        positive, _ = build_prompt(payload, "local")
         
         # 提取 composition 在 positive prompt 中的部分，验证其被截断且长度合理
         assert "A very long detailed composition description" in positive
@@ -198,7 +196,7 @@ class TestPromptBuildingEdgeCases:
             negative=["ugly", "deformed", "mutated"],
             ratio="1:1"
         )
-        prompt = build_prompt("openai", payload)
+        prompt = build_prompt(payload, "openai")
         assert "The image should not contain any of the following: ugly, deformed, mutated" in prompt
 
     def test_gemini_negative_formatting(self):
@@ -211,6 +209,20 @@ class TestPromptBuildingEdgeCases:
             negative=["ugly", "deformed", "mutated"],
             ratio="1:1"
         )
-        prompt = build_prompt("gemini", payload)
+        prompt = build_prompt(payload, "gemini")
         assert "The image should not contain any of the following: ugly, deformed, mutated" in prompt
+
+    def test_local_prompt_with_composition_short(self):
+        payload = PromptPayload(
+            subject="dog",
+            style="cartoon",
+            composition="a very long composition that should be ignored",
+            composition_short="a short composition",
+            colors=["red"],
+            background="grass",
+            ratio="1:1"
+        )
+        positive, _ = build_prompt(payload, "local")
+        assert "a short composition" in positive
+        assert "a very long composition" not in positive
 

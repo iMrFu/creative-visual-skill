@@ -8,7 +8,7 @@ import re
 import json
 from typing import List
 
-from utils import (
+from .utils import (
     StyleInfo,
     ArticleInfo,
     STYLES_DIR,

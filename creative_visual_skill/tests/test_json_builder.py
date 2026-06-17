@@ -6,11 +6,8 @@ import os
 import sys
 import pytest
 
-# 将项目根目录加入 sys.path，以便直接 import 项目模块
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from utils import ArticleInfo, StyleInfo, PromptPayload
-from json_builder import build_payload
+from creative_visual_skill.utils import ArticleInfo, StyleInfo, PromptPayload
+from creative_visual_skill.json_builder import build_payload
 
 
 # ===========================================================================
@@ -35,6 +32,7 @@ def sample_style():
         style_name="cyberpunk",
         subject_placeholder="[SUBJECT]",
         composition="[SUBJECT] centered in a neon-lit cityscape",
+        composition_short="a short view of [SUBJECT]",
         colors=["electric blue", "hot pink"],
         background="dark metropolitan skyline with holographic billboards",
         negative=["blurry", "low quality", "watermark"],
@@ -58,6 +56,7 @@ class TestBuildPayloadBasic:
         assert payload.style == sample_style.style_name
         assert payload.colors == sample_style.colors
         assert payload.background == sample_style.background
+        assert payload.composition_short == "a short view of a futuristic robot arm assembling microchips"
         assert payload.negative == sample_style.negative
         assert payload.tags == sample_style.tags
         assert payload.examples == sample_style.examples

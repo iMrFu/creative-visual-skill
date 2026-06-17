@@ -16,7 +16,7 @@ import urllib.parse
 import urllib.error
 from typing import List
 
-from utils import (
+from .utils import (
     PromptPayload,
     ImageResult,
     OUTPUT_DIR,
@@ -25,7 +25,7 @@ from utils import (
     read_json_file,
     generate_timestamped_filename,
 )
-from config import load_config
+from .config import load_config
 
 # ---------------------------------------------------------------------------
 # 串行队列锁 —— 本地 ComfyUI 同一时间只跑一个任务
@@ -79,7 +79,7 @@ def _run_local(payload: PromptPayload) -> ImageResult:
     通过 ComfyUI HTTP API 执行本地生图。
     严格串行：同一时间只允许一个任务在跑。
     """
-    from model_adapter import build_prompt
+    from .model_adapter import build_prompt
 
     config = load_config()
     # Apply dynamic memory overrides if present in payload
@@ -87,7 +87,7 @@ def _run_local(payload: PromptPayload) -> ImageResult:
         config.update(payload.overrides)
         run_logger.info(f"应用记忆库动态覆盖参数: {payload.overrides}")
 
-    positive, negative = build_prompt("local", payload)
+    positive, negative = build_prompt(payload, "local")
 
 
     # ---- 加载工作流模板 ----
@@ -198,7 +198,7 @@ def _run_openai(payload: PromptPayload) -> ImageResult:
     通过 OpenAI images.generate API 生图。
     支持指数退避重试（主要处理 429 限流）。
     """
-    from model_adapter import build_prompt
+    from .model_adapter import build_prompt
 
     try:
         import openai
@@ -211,7 +211,7 @@ def _run_openai(payload: PromptPayload) -> ImageResult:
         config.update(payload.overrides)
         run_logger.info(f"应用记忆库动态覆盖参数: {payload.overrides}")
 
-    prompt_text = build_prompt("openai", payload)
+    prompt_text = build_prompt(payload, "openai")
 
 
     model = config.get("openai_model", "gpt-image-1")
@@ -237,7 +237,7 @@ def _run_openai(payload: PromptPayload) -> ImageResult:
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            client = openai.OpenAI()
+            client = openai.OpenAI(base_url=config.get("openai_base_url", "") or None)
             run_logger.info(f"OpenAI 生图请求 | model={model} | size={size} | attempt={attempt+1}")
 
             response = client.images.generate(
@@ -322,7 +322,7 @@ def _run_gemini(payload: PromptPayload) -> ImageResult:
     """
     通过 Google GenAI SDK 生图。
     """
-    from model_adapter import build_prompt
+    from .model_adapter import build_prompt
 
     try:
         from google import genai
@@ -339,7 +339,7 @@ def _run_gemini(payload: PromptPayload) -> ImageResult:
         config.update(payload.overrides)
         run_logger.info(f"应用记忆库动态覆盖参数: {payload.overrides}")
 
-    prompt_text = build_prompt("gemini", payload)
+    prompt_text = build_prompt(payload, "gemini")
 
 
     model = config.get("gemini_model", "gemini-2.0-flash-preview-image-generation")

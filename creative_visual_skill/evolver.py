@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from utils import (
+from .utils import (
     PromptPayload,
     run_logger,
     evolution_logger,
@@ -20,7 +20,7 @@ from utils import (
     copy_file,
     generate_timestamped_filename,
 )
-from config import load_config, update_config
+from .config import load_config, update_config
 
 
 # ===========================================================================
@@ -218,7 +218,7 @@ def _evaluate_generation_vision(
 
         if llm_provider == "openai":
             from openai import OpenAI
-            client = OpenAI()
+            client = OpenAI(base_url=config.get("openai_base_url", "") or None)
             img_b64 = base64.b64encode(img_bytes).decode("utf-8")
             ext = os.path.splitext(image_path)[1].lower()
             mime_type = "image/png" if "png" in ext else "image/jpeg"
@@ -323,7 +323,7 @@ def _evaluate_generation_text_llm(
     try:
         if llm_provider == "openai":
             from openai import OpenAI
-            client = OpenAI()
+            client = OpenAI(base_url=config.get("openai_base_url", "") or None)
             response = client.chat.completions.create(
                 model=config.get("llm_model", "gpt-4o-mini"),
                 messages=[

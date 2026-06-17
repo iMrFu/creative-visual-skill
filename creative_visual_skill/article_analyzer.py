@@ -9,8 +9,9 @@ import re
 from collections import Counter
 from typing import List, Dict, Optional
 
-from utils import ArticleInfo, run_logger
-from config import load_config
+from .utils import ArticleInfo, run_logger
+from .config import load_config
+
 
 # ---------------------------------------------------------------------------
 # jieba 分词：优雅降级
@@ -298,7 +299,9 @@ def _analyze_with_openai(text: str, config: dict) -> Optional[ArticleInfo]:
         import openai
 
         model = config.get("llm_model", "gpt-4o-mini")
-        client = openai.OpenAI()  # 从环境变量读取 API key
+        base_url = config.get("openai_base_url", "") or None
+        client = openai.OpenAI(base_url=base_url)  # 从环境变量读取 API key
+
 
         run_logger.info(f"[V2 OpenAI] 使用模型 {model} 分析文章...")
 

@@ -4,7 +4,7 @@ Creative Visual Skill — 配置管理模块
 """
 
 import os
-from utils import PROJECT_ROOT, read_json_file, write_json_file
+from .utils import PROJECT_ROOT, read_json_file, write_json_file
 
 CONFIG_PATH = os.path.join(PROJECT_ROOT, "config.json")
 
@@ -34,6 +34,8 @@ DEFAULT_CONFIG = {
     "openai_size_cover": "1536x1024",
     "openai_size_content": "1536x1024",
     "openai_quality": "high",
+    "openai_base_url": "",
+
 
     # --- 云端 Gemini ---
     "gemini_model": "gemini-2.0-flash-preview-image-generation",

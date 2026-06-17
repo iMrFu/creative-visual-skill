@@ -16,9 +16,9 @@ import json
 from typing import Optional
 
 
-from utils import StyleInfo, run_logger
-from config import load_config
-from style_library import add_style_to_library, save_image_to_library
+from .utils import StyleInfo, run_logger
+from .config import load_config
+from .style_library import add_style_to_library, save_image_to_library
 
 
 # ===========================================================================
@@ -296,7 +296,7 @@ def _parse_style_from_image(
             import openai
             import base64
             model = config.get("llm_model", "gpt-4o-mini")
-            client = openai.OpenAI()
+            client = openai.OpenAI(base_url=config.get("openai_base_url", "") or None)
 
             with open(image_path, "rb") as f:
                 img_bytes = f.read()
@@ -384,7 +384,7 @@ def _add_subject_placeholder_via_llm(
         if llm_provider == "openai":
             import openai
             model = config.get("llm_model", "gpt-4o-mini")
-            client = openai.OpenAI()
+            client = openai.OpenAI(base_url=config.get("openai_base_url", "") or None)
             response = client.chat.completions.create(
                 model=model,
                 messages=[

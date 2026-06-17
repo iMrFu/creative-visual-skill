@@ -8,10 +8,7 @@ import shutil
 import pytest
 from unittest import mock
 
-# 将项目根目录加入 sys.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from utils import (
+from creative_visual_skill.utils import (
     PromptPayload,
     ArticleInfo,
     StyleInfo,
@@ -19,8 +16,8 @@ from utils import (
     MEMORY_BAD_CASES_DIR,
     read_json_file,
 )
-from evolver import record_evolution_memory
-from json_builder import check_memory_for_overrides, build_payload
+from creative_visual_skill.evolver import record_evolution_memory
+from creative_visual_skill.json_builder import check_memory_for_overrides, build_payload
 
 
 @pytest.fixture(autouse=True)

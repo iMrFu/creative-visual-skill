@@ -7,10 +7,8 @@ import os
 import pytest
 
 # 将项目根目录加入 sys.path，确保能导入项目模块
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
-from utils import StyleInfo, ArticleInfo, STYLES_DIR, read_text_file
-from style_library import (
+from creative_visual_skill.utils import StyleInfo, ArticleInfo, STYLES_DIR, read_text_file
+from creative_visual_skill.style_library import (
     list_styles,
     select_style,
     add_style_to_library,

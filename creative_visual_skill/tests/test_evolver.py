@@ -6,11 +6,9 @@ import os
 import sys
 import json
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from evolver import evaluate_generation, trigger_evolution, apply_evolution, get_evolution_history
-from utils import PromptPayload, LOGS_DIR
-from config import load_config, CONFIG_PATH
+from creative_visual_skill.evolver import evaluate_generation, trigger_evolution, apply_evolution, get_evolution_history
+from creative_visual_skill.utils import PromptPayload, LOGS_DIR
+from creative_visual_skill.config import load_config, CONFIG_PATH
 
 
 class TestEvolverRules:
@@ -98,7 +96,7 @@ class TestEvolverApply:
             assert new_config["whitespace_weight"] == 1.5
         finally:
             # 恢复原始配置
-            from config import save_config
+            from creative_visual_skill.config import save_config
             save_config(original_config)
 
     def test_apply_empty_evolution(self):

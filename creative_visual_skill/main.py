@@ -22,12 +22,12 @@ if sys.platform == "win32":
 load_dotenv()
 
 
-# 确保当前目录在 sys.path 中，以便直接运行
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+# Ensure the parent directory is in sys.path
+PROJECT_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_PARENT not in sys.path:
+    sys.path.insert(0, PROJECT_PARENT)
 
-from utils import (
+from .utils import (
     ArticleInfo,
     StyleInfo,
     PromptPayload,
@@ -35,13 +35,13 @@ from utils import (
     run_logger,
     __version__,
 )
-from config import load_config, get_config_value
-from article_analyzer import analyze_article
-from style_library import list_styles, select_style
-from json_builder import build_payload
-from image_runner import run_image_job, run_batch_jobs
-from save_style import process_save_request, check_save_trigger
-from evolver import (
+from .config import load_config, get_config_value
+from .article_analyzer import analyze_article
+from .style_library import list_styles, select_style
+from .json_builder import build_payload
+from .image_runner import run_image_job, run_batch_jobs
+from .save_style import process_save_request, check_save_trigger
+from .evolver import (
     trigger_evolution,
     evaluate_generation,
     apply_evolution,
@@ -390,7 +390,7 @@ def main():
     if not len(sys.argv) > 1:
         print_banner()
         parser.print_help()
-        print("\n💡 建议运行: python main.py --interactive 启动交互模式")
+        print("\n💡 建议运行: python -m creative_visual_skill.main --interactive 启动交互模式")
         return
 
     # 1. 列出风格库
