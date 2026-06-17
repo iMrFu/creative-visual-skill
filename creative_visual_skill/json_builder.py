@@ -36,6 +36,7 @@ def build_payload(
     # ---- 1. 替换 [SUBJECT] 占位符 ----
     placeholder = style_info.subject_placeholder or "[SUBJECT]"
     composition = style_info.composition.replace(placeholder, article_info.subject)
+    background = style_info.background.replace(placeholder, article_info.subject)
 
     run_logger.info(
         "build_payload | subject='%s', style='%s', ratio='%s'",
@@ -53,7 +54,7 @@ def build_payload(
         style=style_info.style_name,
         composition=composition,
         colors=list(style_info.colors),       # 防止引用共享
-        background=style_info.background,
+        background=background,
         ratio=ratio,
         negative=list(style_info.negative),
         tags=list(style_info.tags),

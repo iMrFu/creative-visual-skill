@@ -204,11 +204,20 @@ def _run_openai(payload: PromptPayload) -> ImageResult:
 
     model = config.get("openai_model", "gpt-image-1")
 
-    # 根据 ratio 选择 size
-    if "cover" in payload.ratio or payload.ratio in ("2.35:1", "21:9"):
-        size = config.get("openai_size_cover", "1536x1024")
+    # 根据 ratio 选择 size 并兼容 DALL-E 3 官方标准尺寸
+    if "dall-e-3" in model.lower() or "image" in model.lower():
+        # DALL-E 3 只接受 1024x1024, 1792x1024, 1024x1792
+        if payload.ratio == "1:1":
+            size = "1024x1024"
+        elif payload.ratio in ("9:16", "2:3"):
+            size = "1024x1792"
+        else:
+            size = "1792x1024"
     else:
-        size = config.get("openai_size_content", "1536x1024")
+        if "cover" in payload.ratio or payload.ratio in ("2.35:1", "21:9"):
+            size = config.get("openai_size_cover", "1536x1024")
+        else:
+            size = config.get("openai_size_content", "1536x1024")
 
     quality = config.get("openai_quality", "high")
 
@@ -317,54 +326,70 @@ def _run_gemini(payload: PromptPayload) -> ImageResult:
 
     model = config.get("gemini_model", "gemini-2.0-flash-preview-image-generation")
 
-    try:
-        client = genai.Client()
-        run_logger.info(f"Gemini 生图请求 | model={model}")
+    # 指数退避重试
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            client = genai.Client()
+            run_logger.info(f"Gemini 生图请求 | model={model} | attempt={attempt+1}")
 
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt_text,
-            config=types.GenerateContentConfig(
-                response_modalities=["TEXT", "IMAGE"],
-            ),
-        )
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt_text,
+                config=types.GenerateContentConfig(
+                    response_modalities=["TEXT", "IMAGE"],
+                ),
+            )
 
-        # 从 response.candidates 中提取图片
-        if response.candidates:
-            for part in response.candidates[0].content.parts:
-                if part.inline_data and part.inline_data.mime_type.startswith("image/"):
-                    # 根据 MIME 类型决定扩展名
-                    mime = part.inline_data.mime_type
-                    ext = ".png" if "png" in mime else ".jpg"
-                    image_bytes = part.inline_data.data
+            # 从 response.candidates 中提取图片
+            if response.candidates:
+                for part in response.candidates[0].content.parts:
+                    if part.inline_data and part.inline_data.mime_type.startswith("image/"):
+                        # 根据 MIME 类型决定扩展名
+                        mime = part.inline_data.mime_type
+                        ext = ".png" if "png" in mime else ".jpg"
+                        image_bytes = part.inline_data.data
 
-                    out_filename = generate_timestamped_filename(prefix="gemini", ext=ext)
-                    out_path = os.path.join(OUTPUT_DIR, out_filename)
-                    os.makedirs(OUTPUT_DIR, exist_ok=True)
-                    with open(out_path, "wb") as f:
-                        f.write(image_bytes)
+                        out_filename = generate_timestamped_filename(prefix="gemini", ext=ext)
+                        out_path = os.path.join(OUTPUT_DIR, out_filename)
+                        os.makedirs(OUTPUT_DIR, exist_ok=True)
+                        with open(out_path, "wb") as f:
+                            f.write(image_bytes)
 
-                    run_logger.info(f"Gemini 生图成功 | 输出: {out_path}")
-                    return ImageResult(
-                        success=True,
-                        image_path=out_path,
-                        prompt_used=prompt_text,
-                        metadata={"provider": "gemini", "model": model},
-                    )
+                        run_logger.info(f"Gemini 生图成功 | 输出: {out_path}")
+                        return ImageResult(
+                            success=True,
+                            image_path=out_path,
+                            prompt_used=prompt_text,
+                            metadata={"provider": "gemini", "model": model},
+                        )
 
-        return ImageResult(
-            success=False,
-            prompt_used=prompt_text,
-            error_message="Gemini 返回结果中未找到图片数据",
-        )
+            # 如果没有返回候选内容，并且是最后一次尝试，则报错返回
+            if attempt == max_retries - 1:
+                return ImageResult(
+                    success=False,
+                    prompt_used=prompt_text,
+                    error_message="Gemini 返回结果中未找到图片数据",
+                )
 
-    except Exception as exc:
-        run_logger.error(f"Gemini 生图失败: {exc}")
-        return ImageResult(
-            success=False,
-            prompt_used=prompt_text,
-            error_message=f"Gemini API 错误: {exc}",
-        )
+        except Exception as exc:
+            error_str = str(exc)
+            is_rate_limit = "429" in error_str or "rate" in error_str.lower()
+            if is_rate_limit and attempt < max_retries - 1:
+                wait = (2 ** attempt) * 2  # 2s, 4s, 8s
+                run_logger.warning(f"Gemini 429 限流，{wait}s 后重试 (attempt {attempt+1})")
+                time.sleep(wait)
+                continue
+            else:
+                run_logger.error(f"Gemini 生图失败: {error_str}")
+                return ImageResult(
+                    success=False,
+                    prompt_used=prompt_text,
+                    error_message=f"Gemini API 错误: {error_str}",
+                )
+
+    # 理论上不会走到这里
+    return ImageResult(success=False, prompt_used=prompt_text, error_message="Gemini 重试次数耗尽")
 
 
 # ===========================================================================

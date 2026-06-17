@@ -97,3 +97,21 @@ class TestBuildPayloadContentRatio:
     def test_build_payload_content_ratio(self, sample_article, sample_style):
         payload = build_payload(sample_article, sample_style, ratio="16:9")
         assert payload.ratio == "16:9"
+
+
+class TestBuildPayloadBackgroundReplacement:
+    """验证 [SUBJECT] 占位符在 background 字段中也被正确替换"""
+
+    def test_build_payload_background_replacement(self, sample_article):
+        style_with_sub_in_bg = StyleInfo(
+            style_name="watercolor",
+            subject_placeholder="[SUBJECT]",
+            composition="[SUBJECT] running in the rain",
+            background="a rainy street reflecting [SUBJECT]'s shadow",
+        )
+        payload = build_payload(sample_article, style_with_sub_in_bg)
+        
+        assert "[SUBJECT]" not in payload.background
+        assert sample_article.subject in payload.background
+        assert "a rainy street reflecting a futuristic robot arm assembling microchips's shadow" in payload.background
+

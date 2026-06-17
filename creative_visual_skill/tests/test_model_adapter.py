@@ -163,3 +163,54 @@ class TestNegativePrompt:
 
         # 负向提示词也是逗号分隔
         assert ", " in negative
+
+
+class TestPromptBuildingEdgeCases:
+    """验证 prompt 构建中的边缘情况（Type C bug 修复）"""
+
+    def test_local_prompt_shortening(self):
+        # 构造一个极长（超过 400 字符）的 composition
+        long_comp = "A very long detailed composition description " * 15
+        assert len(long_comp) > 400
+
+        payload = PromptPayload(
+            subject="dog",
+            style="cartoon",
+            composition=long_comp,
+            colors=["red"],
+            background="grass",
+            ratio="1:1"
+        )
+        positive, _ = build_prompt("local", payload)
+        
+        # 提取 composition 在 positive prompt 中的部分，验证其被截断且长度合理
+        assert "A very long detailed composition description" in positive
+        # 整体长度不应该无限长，且保留了截断标志或者比原本更短
+        assert len(positive) < len(long_comp)
+
+    def test_openai_negative_formatting(self):
+        payload = PromptPayload(
+            subject="dog",
+            style="cartoon",
+            composition="dog on grass",
+            colors=["red"],
+            background="grass",
+            negative=["ugly", "deformed", "mutated"],
+            ratio="1:1"
+        )
+        prompt = build_prompt("openai", payload)
+        assert "The image should not contain any of the following: ugly, deformed, mutated" in prompt
+
+    def test_gemini_negative_formatting(self):
+        payload = PromptPayload(
+            subject="dog",
+            style="cartoon",
+            composition="dog on grass",
+            colors=["red"],
+            background="grass",
+            negative=["ugly", "deformed", "mutated"],
+            ratio="1:1"
+        )
+        prompt = build_prompt("gemini", payload)
+        assert "The image should not contain any of the following: ugly, deformed, mutated" in prompt
+

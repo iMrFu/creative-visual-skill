@@ -64,11 +64,14 @@ def _build_local_prompt(payload: PromptPayload) -> Tuple[str, str]:
     # ---- 色彩描述 ----
     color_desc = " and ".join(payload.colors) if payload.colors else "harmonious"
 
+    # ---- 缩减超长 composition ----
+    short_comp = _shorten_composition(payload.composition, max_chars=400)
+
     # ---- 基础标签序列 ----
     parts = [
         payload.subject,
         f"{payload.style} style",
-        payload.composition,
+        short_comp,
         f"{color_desc} color palette",
         f"{payload.background} background",
         "masterpiece",
@@ -136,6 +139,10 @@ def _build_openai_prompt(payload: PromptPayload) -> str:
         f"{ratio_hint}"
     )
 
+    # 追加否定约束 (DALL-E)
+    if payload.negative:
+        prompt += " The image should not contain any of the following: " + ", ".join(payload.negative) + "."
+
     # 追加额外 tags 作为风格细节
     if payload.tags:
         prompt += " Additional style details: " + ", ".join(payload.tags) + "."
@@ -168,6 +175,10 @@ def _build_gemini_prompt(payload: PromptPayload) -> str:
         f"Background: {payload.background}. "
         f"{ratio_hint}"
     )
+
+    # 追加否定约束 (Gemini)
+    if payload.negative:
+        prompt += " The image should not contain any of the following: " + ", ".join(payload.negative) + "."
 
     # 追加额外 tags
     if payload.tags:
@@ -205,3 +216,16 @@ def _ratio_narrative_en(ratio: str) -> str:
     elif ratio == "21:9":
         return "The image should be in an ultra-wide 21:9 aspect ratio with panoramic composition."
     return f"The image aspect ratio is {ratio}."
+
+
+def _shorten_composition(composition: str, max_chars: int = 400) -> str:
+    """如果 composition 超过 max_chars，截断至句尾或直接截断，避免 ComfyUI/CLIP 编码过载"""
+    if len(composition) <= max_chars:
+        return composition
+    
+    # 尝试在句号、分号或换行处截断
+    truncated = composition[:max_chars]
+    last_period = max(truncated.rfind("."), truncated.rfind(";"), truncated.rfind("\n"))
+    if last_period > max_chars // 2:
+        return composition[:last_period + 1].strip()
+    return truncated.strip() + "..."
