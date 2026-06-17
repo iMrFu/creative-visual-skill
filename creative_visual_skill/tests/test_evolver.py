@@ -8,38 +8,79 @@ import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evolver import trigger_evolution, apply_evolution, get_evolution_history
+from evolver import evaluate_generation, trigger_evolution, apply_evolution, get_evolution_history
 from utils import PromptPayload, LOGS_DIR
 from config import load_config, CONFIG_PATH
 
 
 class TestEvolverRules:
-    """规则匹配测试"""
+    """规则匹配诊断评估测试"""
 
     def test_rule_based_crowded(self):
-        """反馈'画面太挤了'应增加留白权重"""
-        updates = trigger_evolution("画面太挤了，元素太多")
-        assert "whitespace_weight" in updates or "max_elements_per_image" in updates
+        """反馈'画面太挤了'应诊断为 skill 并建议增加留白权重"""
+        report = evaluate_generation(
+            image_path="",
+            prompt_text="",
+            payload=PromptPayload(),
+            feedback="画面太挤了，元素太多",
+            use_llm=False
+        )
+        assert report["has_issue"] is True
+        assert report["issue_type"] == "skill"
+        assert "whitespace_weight" in report["proposed_changes"] or "max_elements_per_image" in report["proposed_changes"]
 
     def test_rule_based_empty(self):
-        """反馈'太空旷了'应减少留白权重"""
-        updates = trigger_evolution("太空旷了，画面太简单了")
-        assert "whitespace_weight" in updates or "max_elements_per_image" in updates
+        """反馈'太空旷了'应诊断为 skill 并建议减少留白权重"""
+        report = evaluate_generation(
+            image_path="",
+            prompt_text="",
+            payload=PromptPayload(),
+            feedback="太空旷了，画面太简单了",
+            use_llm=False
+        )
+        assert report["has_issue"] is True
+        assert report["issue_type"] == "skill"
+        assert "whitespace_weight" in report["proposed_changes"] or "max_elements_per_image" in report["proposed_changes"]
 
     def test_rule_based_blurry(self):
-        """反馈'图片模糊'应增加步数"""
-        updates = trigger_evolution("生成的图片很模糊，不清晰")
-        assert "comfyui_steps" in updates
+        """反馈'图片模糊'应诊断为 skill 并建议增加步数"""
+        report = evaluate_generation(
+            image_path="",
+            prompt_text="",
+            payload=PromptPayload(),
+            feedback="生成的图片很模糊，不清晰",
+            use_llm=False
+        )
+        assert report["has_issue"] is True
+        assert report["issue_type"] == "skill"
+        assert "comfyui_steps" in report["proposed_changes"]
 
     def test_rule_based_deformed(self):
-        """反馈'变形扭曲'应添加反向词"""
-        updates = trigger_evolution("画面变形了，人物扭曲")
-        assert "_add_negative" in updates
+        """反馈'变形扭曲'应诊断为 model 问题，且 proposed_changes 为空"""
+        report = evaluate_generation(
+            image_path="",
+            prompt_text="",
+            payload=PromptPayload(),
+            feedback="画面变形了，人物扭曲",
+            use_llm=False
+        )
+        assert report["has_issue"] is True
+        assert report["issue_type"] == "model"
+        assert report["proposed_changes"] == {}
+        assert "建议尝试更换" in report["explanation"]
 
     def test_rule_based_no_match(self):
-        """无匹配反馈应返回空更新"""
-        updates = trigger_evolution("不知道该怎么说")
-        assert isinstance(updates, dict)
+        """无匹配反馈应返回无问题"""
+        report = evaluate_generation(
+            image_path="",
+            prompt_text="",
+            payload=PromptPayload(),
+            feedback="不知道该怎么说",
+            use_llm=False
+        )
+        assert report["has_issue"] is False
+        assert report["issue_type"] == "none"
+        assert report["proposed_changes"] == {}
 
 
 class TestEvolverApply:

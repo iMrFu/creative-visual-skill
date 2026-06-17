@@ -33,7 +33,7 @@ from style_library import list_styles, select_style
 from json_builder import build_payload
 from image_runner import run_image_job, run_batch_jobs
 from save_style import process_save_request, check_save_trigger
-from evolver import trigger_evolution, apply_evolution, get_evolution_history
+from evolver import trigger_evolution, evaluate_generation, apply_evolution, get_evolution_history
 
 
 def print_banner():
@@ -152,52 +152,79 @@ def run_pipeline(
             print(f"  ❌ 任务 {idx} ({ratio_str}): 失败! 原因: {res.error_message}")
             run_logger.error(f"Pipeline 生图失败 ({ratio_str}) -> {res.error_message}")
 
-    # ---- [新增] Agent 创作评分系统 ----
+    # ---- [重构] Agent 主动视觉审计与双轨自进化环 ----
     if all_success:
-        print("\n🤖 [Agent 创作评分系统] 请为本次生成的图片打分：")
-        print("   (1分: 极不满意，5分: 非常满意。若 10 秒内直接回车，则默认评分 5 分)")
-        
-        # 带有默认超时的非阻塞键盘等待 (若无输入则默认满意)
-        import select
-        
-        # 兼容 Windows 系统的 KB 输入超时逻辑
-        import msvcrt
-        print("   请输入评分 (1-5, 默认 5): ", end="", flush=True)
-        
-        score_input = ""
-        start_time = time.time()
-        timeout = 10.0
-        
-        while time.time() - start_time < timeout:
-            if msvcrt.kbhit():
-                char = msvcrt.getwche()
-                if char in ('\r', '\n'):
-                    break
-                score_input += char
-            time.sleep(0.05)
-            
-        print() # 换行
-        score_input = score_input.strip()
-        
-        score = 5
-        if score_input:
+        print("\n🤖 [Agent 视觉审计系统] 启动画面诊断与自进化环...")
+
+        def _safe_readline(prompt_text):
             try:
-                parsed_score = int(score_input)
-                if 1 <= parsed_score <= 5:
-                    score = parsed_score
+                print(prompt_text, end="", flush=True)
+                return sys.stdin.readline().strip()
+            except (IOError, KeyboardInterrupt):
+                return ""
+
+        for idx, res in enumerate(results, 1):
+            ratio_str = ratios[idx - 1]
+            payload = payloads[idx - 1]
+
+            # 1. 自动审计阶段：如果开启 LLM，对成功生成的图片进行多模态视觉审计
+            report = None
+            if use_llm:
+                print(f"  🔍 正在使用多模态大模型对任务 {idx} ({ratio_str}) 进行视觉质量审计...")
+                report = evaluate_generation(
+                    image_path=res.image_path,
+                    prompt_text=res.prompt_used,
+                    payload=payload,
+                    use_llm=True,
+                    llm_provider=config.get("llm_provider", "openai")
+                )
+                if report and report.get("has_issue"):
+                    print(f"  🤖 Agent 自动审计结论：\n     {report.get('explanation')}")
+
+            # 2. 如果自动审计认为完美，或者未开启大模型，则询问用户满意度并收集反馈
+            if not report or not report.get("has_issue"):
+                if use_llm:
+                    print("  🤖 Agent 自动审计：画面构图及色彩良好，未检测到明显配置问题。")
+                print("  💬 请问您对本次生成的图片满意吗？如果需要优化微调，请简述您的改进意见。")
+                user_feedback = _safe_readline("     (若满意请直接按回车跳过诊断): ")
+
+                if user_feedback:
+                    # 使用文本反馈再次调用评估
+                    report = evaluate_generation(
+                        image_path=res.image_path,
+                        prompt_text=res.prompt_used,
+                        payload=payload,
+                        feedback=user_feedback,
+                        use_llm=use_llm,
+                        llm_provider=config.get("llm_provider", "openai")
+                    )
+
+            # 3. 处理诊断报告并交互式修改配置
+            if report and report.get("has_issue"):
+                issue_type = report.get("issue_type")
+                explanation = report.get("explanation")
+                proposed_changes = report.get("proposed_changes")
+
+                print(f"\n  🎯 诊断结论：{explanation}")
+
+                if issue_type == "skill" and proposed_changes:
+                    print("  🔧 检测到待调优配置项（Skill 参数）：")
+                    for k, v in proposed_changes.items():
+                        print(f"     - {k}: {v}")
+
+                    confirm = _safe_readline("  ❓ 是否同意 Agent 自动修改配置文件并应用？(y/n): ").lower()
+                    if confirm in ("y", "yes"):
+                        apply_evolution(proposed_changes)
+                        print("  ✅ 配置已成功更新并记录！再次生成时将应用新参数。")
+                    else:
+                        print("  ❌ 已取消，未修改任何配置参数。")
+                elif issue_type == "model":
+                    print("  💡 审计建议：此问题由于渲染引擎/底层模型局限性导致（如复杂的拼写或身体肢体变形），")
+                    print("     推荐尝试切换不同的生图后端（例如命令行追加 `--provider openai` 切换至 DALL-E 3，或者在 ComfyUI 中加载 Flux 模型）。")
                 else:
-                    print("   ⚠️ 输入不在 1-5 范围内，默认使用评分 5 分。")
-            except ValueError:
-                print("   ⚠️ 输入无效，默认使用评分 5 分。")
-        else:
-            print("   ⏳ 超时未输入或直接回车，默认用户满意（评分 5 分）。")
-            
-        run_logger.info(f"Agent 创作评分 | 用户给分: {score}/5")
-        print(f"   🎯 记录评分: {score} 分。这是 CVSkill 自我优化系统的一部分，我们会根据评分与运行日志不断自我演进！")
-        
-        # 如果评分较低，自动提示进行自进化调优
-        if score <= 3:
-            print("   💡 检测到您对结果不够满意，您可以随时使用 `python main.py --optimize <反馈>` 告诉我们具体原因以进行优化调整。")
+                    print("  ℹ️ 诊断完成，无需执行参数微调。")
+            else:
+                print("  ✨ 画面审计完成，用户确认满意！")
 
     return all_success
 
