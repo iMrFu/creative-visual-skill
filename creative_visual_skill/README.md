@@ -102,12 +102,13 @@ graph TD
 
 | 风格名称 | 推荐配色 (Colors) | 构图特征 (Composition) | 背景设定 (Background) | 示例路径 (Examples) |
 |---|---|---|---|---|
-| **复古剪贴簿拼贴风** | 暖琥珀色、淡黄芥末色、赭石色、玫瑰粉色、奶油白、深褐灰色 | 多层纸张重叠、撕边、纸胶带装饰，融入复古邮票和手写笔记点缀，主体带防伪感 | 咖啡渍、纸张颗粒感与轻微折痕的古朴牛皮纸 | `styles/image/vintage_sample.png` |
-| **赛博朋克霓虹风** | 电子蓝、极客品红、青色、深紫、霓虹粉、纯黑 | 汇聚的霓虹线条网格、全息UI图层、故障艺术条带，主体带霓虹光晕 | 细雨打湿的城市剪影，弥漫迷雾，反射霓虹广告牌光晕 | `styles/image/cyberpunk_sample.png` |
-| **清新水彩插画风** | 薄荷绿、腮红粉、天空蓝、薰衣草紫、淡柠檬黄、蜜桃橙 | 湿画法晕染、细腻钢笔淡彩撕边、留白。主体以写意笔触呈现，伴随植物花草 | 纹理清晰的白色水彩纸，带有向边缘淡化的柔和渐变色晕 | `styles/image/watercolor_sample.png` |
-| **极简扁平设计风** | 纯白、炭黑、珊瑚红、天空蓝、柔和灰、暗青 | 纯几何形状拼接、无渐变平面色块，非对称三分法，极简呼吸感留白 | 纯色无渐变背景，突出图形本身的视觉冲击力 | `styles/image/minimalist_sample.png` |
-| **油画质感艺术风** | 深红、深褐、金土黄、普鲁士蓝、象牙白、橄榄绿 | 戏剧性斜射强光（明暗对照法法）、强烈的对角线引导线，明显的颜料堆叠肌理 | 略带烟雾感的多层深色油画画布，可见刮刀堆叠和上光油折射肌理 | `styles/image/oilpainting_sample.png` |
-| **日系治愈手绘风** | 暖奶油白、柔珊瑚色、粉末蓝、淡黄、樱花粉、抹茶绿 | 圆润柔和形状、暖心氛围、彩铅线条勾画，点缀以小星星、花瓣等小细节 | 带着浅浅手绘描边格子的浅黄奶油色卡纸 | `styles/image/japanese_sample.png` |
+| **复古剪贴簿拼贴风** | 暖琥珀色、淡黄芥末色、赭石色、玫瑰粉色、奶油白、深褐灰色 | 多层纸张重叠、撕边、纸胶带装饰，融入复古邮票和手写笔记点缀，主体带防伪感 | 咖啡渍、纸张颗粒感与轻微折痕 of 古朴牛皮纸 | [<img src="styles/image/vintage_sample.png" width="100">](styles/image/vintage_sample.png) |
+| **赛博朋克霓虹风** | 电子蓝、极客品红、青色、深紫、霓虹粉、纯黑 | 汇聚的霓虹线条网格、全息UI图层、故障艺术条带，主体带霓虹光晕 | 细雨打湿的城市剪影，弥漫迷雾，反射霓虹广告牌光晕 | [<img src="styles/image/cyberpunk_sample.png" width="100">](styles/image/cyberpunk_sample.png) |
+| **清新水彩插画风** | 薄荷绿、腮红粉、天空蓝、薰衣草紫、淡柠檬黄、蜜桃橙 | 湿画法晕染、细腻钢笔淡彩撕边、留白。主体以写意笔触呈现，伴随植物花草 | 纹理清晰的白色水彩纸，带有向边缘淡化的柔和渐变色晕 | [<img src="styles/image/watercolor_sample.png" width="100">](styles/image/watercolor_sample.png) |
+| **极简扁平设计风** | 纯白、炭黑、珊瑚红、天空蓝、柔和灰、暗青 | 纯几何形状拼接、无渐变平面色块，非对称三分法，极简呼吸感留白 | 纯色无渐变背景，突出图形本身的视觉冲击力 | [<img src="styles/image/minimalist_sample.png" width="100">](styles/image/minimalist_sample.png) |
+| **油画质感艺术风** | 深红、深褐、金土黄、普鲁士蓝、象牙白、橄榄绿 | 戏剧性斜射强光（明暗对照法法）、强烈的对角线引导线，明显的颜料堆叠肌理 | 略带烟雾感的多层深色油画画布，可见刮刀堆叠和上光油折射肌理 | [<img src="styles/image/oilpainting_sample.png" width="100">](styles/image/oilpainting_sample.png) |
+| **日系治愈手绘风** | 暖奶油白、柔珊瑚色、粉末蓝、淡黄、樱花粉、抹茶绿 | 圆润柔和形状、暖心氛围、彩铅线条勾画，点缀以小星星、花瓣等小细节 | 带着浅浅手绘描边格子的浅黄奶油色卡纸 | [<img src="styles/image/japanese_sample.png" width="100">](styles/image/japanese_sample.png) |
+
 
 ---
 
