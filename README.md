@@ -200,6 +200,31 @@ graph TD
 
 ---
 
+## 📥 素材与风格入库指南
+
+CVSkill 提供非常智能的风格/素材注入机制，支持从“文字描述”或“本地参考图片”两种通道提取并沉淀到风格库 `style_library.md`：
+
+### 1. 基于文字描述注册
+用户使用自然语言描述一种风格（需包含 `保存到内容库`、`存入素材` 等触发词）。
+*   **主体自愈注入**：若描述中未包含 `[SUBJECT]` 占位符，且启用了 `--use-llm`，系统将在终端触发交互机制：
+    *   `[1] 强行保存为固定无主体风格`：每次生图时主体固定。
+    *   `[2] AI 自动推断并替换注入 [SUBJECT]`（推荐）：自动识别核心名词并替换，原物品名归入标签。
+```bash
+# 自动提取占位符
+python main.py --save-style "保存到内容库：老旧打字机放在牛皮纸上，暖黄色调" --use-llm
+```
+
+### 2. 基于本地参考图片直接注册（多模态视觉解析）
+直接向 `--save-style` 传入一个合法的本地图片文件路径（如 `.png`/`.jpg`），系统将：
+1.  调用 Vision LLM（如 Gemini 2.0 / GPT-4o-mini）逆向分析图片的构图、配色、背景，并自动抽象出 `[SUBJECT]`。
+2.  将源图片自动保存/拷贝至 `styles/image/` 并将生成的风格 JSON 卡片追加写入 `styles/style_library.md`。
+```bash
+# 必须启用 --use-llm 以开启 Vision 分析
+python main.py --save-style "styles/image/vintage_sample.png" --use-llm
+```
+
+---
+
 ## 🛠️ 安装与运行
 
 ### 1. 依赖安装
@@ -217,6 +242,7 @@ python main.py --interactive
 
 ### 3. 测试检验
 ```bash
-python -m pytest tests/ -v
+python -m pytest creative_visual_skill/tests/ -v
 ```
-*32 项断言测试全通通过即可确认安装完好。*
+*43 项断言测试全数通过即可确认安装完好。*
+

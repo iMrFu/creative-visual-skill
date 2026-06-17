@@ -55,9 +55,25 @@ python creative_visual_skill/main.py --article "长文章内容..." --style "赛
 ```
 
 ### 3. 保存新风格 (素材注入)
+CVSkill 支持通过“文字描述”或“本地参考图片”两种方式智能录入新风格：
+
+#### 3.1 基于文字描述注册
+如果描述中包含可变主体，推荐使用 `[SUBJECT]` 占位符；若没有，AI 将智能推断核心主体并引导您交互式自愈注入。
 ```bash
+# 标准录入方式（必须包含“保存到视觉库”、“存入素材”等触发词）
 python creative_visual_skill/main.py --save-style "保存到视觉库：极简插画风，主体使用[SUBJECT]，采用黑金撞色，现代极简风格。"
+
+# 智能自愈录入（若描述中缺少 [SUBJECT]，启动二次确权进行 AI 识别与自动注入）
+python creative_visual_skill/main.py --save-style "保存到视觉库：极简插画风，一个精致的蜡烛放在黑色大理石桌面上" --use-llm
 ```
+
+#### 3.2 基于本地参考图片直注（视觉多模态反向工程）
+直接传入本地 PNG/JPG 图像路径，系统将自动调用 Vision LLM 逆向推导生图参数，并把该图片保存到内容库作为样例。
+```bash
+# 传入图片文件路径，必须启用 --use-llm 以唤醒多模态解析能力
+python creative_visual_skill/main.py --save-style "styles/image/vintage_sample.png" --use-llm
+```
+
 
 ### 4. 触发自进化
 ```bash
