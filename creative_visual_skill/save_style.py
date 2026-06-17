@@ -148,8 +148,20 @@ def _parse_v2_llm_enhanced(user_input: str, llm_provider: str = "openai") -> Opt
     config = load_config()
 
     system_prompt = (
-        "你是一个视觉风格解析助手。用户会用自然语言描述一种图片风格，"
-        "请你将其解析为以下 JSON 结构（字段全部必填）：\n"
+        "你是一个优秀的自媒体视觉风格解析助手。用户会用自然语言描述一种图片风格，"
+        "请你将其解析为以下 JSON 结构，并严格遵守解析原则：\n\n"
+        "【解析原则】\n"
+        "1. 变量主体抽象：用户描述中用于生图的可变核心主体必须用 `[SUBJECT]` 占位符代替（例如：如果描述提及'主体是[SUBJECT]'，在构图或背景中应将核心主体写为 `[SUBJECT]`）。\n"
+        "2. 固定场景元素保留：描述中具体指明的道具、陈设、环境要素（如'深绿色羊毛衫'、'木桌'、'蜡烛'、'数据卡片'等）属于此风格不可分割的**固定场景特征**，**必须原样保留**在 `composition` 或 `background` 描述中，作为生成每一张图时的固定视觉元素。\n"
+        "3. 字段解释：\n"
+        "   - style_name: 风格简称（不超过10字，如'秋日温暖复古风'）\n"
+        "   - subject_placeholder: 固定为 '[SUBJECT]'\n"
+        "   - composition: 详细的画面构图描述，包含 `[SUBJECT]` 在画面中的位置，以及周围摆放的固定元素\n"
+        "   - colors: 包含3-6个契合该风格的英文颜色或色彩描述词\n"
+        "   - background: 详细的环境背景氛围描述，可包含固定的背景陈设要素\n"
+        "   - negative: 排除的负向元素词列表\n"
+        "   - tags: 风格相关的中英文检索标签列表\n\n"
+        "【JSON结构】\n"
         "{\n"
         '  "style_name": "风格名称",\n'
         '  "subject_placeholder": "[SUBJECT]",\n'
@@ -160,7 +172,7 @@ def _parse_v2_llm_enhanced(user_input: str, llm_provider: str = "openai") -> Opt
         '  "tags": ["标签1", "标签2"],\n'
         '  "examples": []\n'
         "}\n"
-        "只返回合法 JSON，不要添加其他文字。"
+        "只返回合法 JSON，不要添加任何解释性文字或 Markdown 代码块包裹（如 ```json）。"
     )
 
     try:
