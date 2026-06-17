@@ -16,7 +16,7 @@
   "background": "Aged kraft paper background with coffee-stained textures, visible paper grain, subtle creases, and sun-faded spots giving an authentic scrapbook feel.",
   "negative": ["digital", "glossy", "neon colors", "3D render", "photorealistic", "cold tones", "modern minimalist", "sharp edges"],
   "tags": ["collage", "vintage", "scrapbook", "warm", "retro", "拼贴", "复古", "温暖"],
-  "examples": []
+  "examples": ["styles/image/vintage_sample.png"]
 }
 ```
 
@@ -31,7 +31,7 @@
   "background": "Dark metropolitan skyline silhouette with rain-slicked reflective surfaces, dense fog diffusing neon signage, flickering hologram advertisements, and distant skyscraper grids glowing against an inky sky.",
   "negative": ["natural", "pastoral", "warm tones", "hand-drawn", "watercolor", "vintage", "soft lighting", "daylight"],
   "tags": ["cyberpunk", "neon", "tech", "futuristic", "科技", "未来", "赛博"],
-  "examples": []
+  "examples": ["styles/image/cyberpunk_sample.png"]
 }
 ```
 
@@ -46,7 +46,7 @@
   "background": "Clean white watercolor paper with subtle cold-press texture, allowing paint blooms and natural pigment granulation to show through, with gentle color washes fading toward the edges.",
   "negative": ["heavy lines", "dark themes", "photorealistic", "3D", "metallic", "neon", "sharp geometric", "digital glitch"],
   "tags": ["watercolor", "fresh", "illustration", "soft", "水彩", "清新", "插画", "柔和"],
-  "examples": []
+  "examples": ["styles/image/watercolor_sample.png"]
 }
 ```
 
@@ -61,7 +61,7 @@
   "background": "Solid flat color field or subtle two-tone split background with no gradients, no textures, and no shadows — pure clean surface emphasizing the graphic shapes.",
   "negative": ["detailed texture", "photorealistic", "3D render", "shadow", "gradient", "ornate", "vintage", "hand-drawn", "noise"],
   "tags": ["minimal", "flat", "clean", "modern", "极简", "扁平", "简约", "现代"],
-  "examples": []
+  "examples": ["styles/image/minimalist_sample.png"]
 }
 ```
 
@@ -76,7 +76,7 @@
   "background": "Dark, atmospheric studio background with smoky depth, subtle warm-to-cool color transitions, and thick oil-paint texture showing palette-knife marks and layered glazes.",
   "negative": ["flat design", "cartoon", "pastel", "digital", "minimalist", "neon", "clean lines", "vector art"],
   "tags": ["oil-painting", "artistic", "classical", "rich", "油画", "艺术", "古典", "浓郁"],
-  "examples": []
+  "examples": ["styles/image/oilpainting_sample.png"]
 }
 ```
 
@@ -91,6 +91,6 @@
   "background": "Soft warm-toned parchment or lightly textured cream background with a subtle hand-drawn border, tiny doodle patterns at the corners, and an overall warm sunlit glow.",
   "negative": ["dark theme", "horror", "photorealistic", "3D render", "neon", "harsh contrast", "geometric", "cyberpunk"],
   "tags": ["japanese", "healing", "hand-drawn", "cute", "日系", "治愈", "手绘", "可爱"],
-  "examples": []
+  "examples": ["styles/image/japanese_sample.png"]
 }
 ```

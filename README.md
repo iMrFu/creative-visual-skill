@@ -47,7 +47,7 @@
     │
     ├── styles/                 # 风格素材库
     │   ├── style_library.md    # 风格库模板定义 (预置 6 大主流视觉风格)
-    │   └── image/              # 用户图片素材目录 (附 .gitkeep)
+    │   └── image/              # 预置 6 大风格的完整样例图片与用户素材目录
     │
     ├── workflows/              # ComfyUI API 工作流模板
     │   ├── sdxl_basic.json     # SDXL 基础工作流 API
