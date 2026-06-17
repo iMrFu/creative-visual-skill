@@ -24,7 +24,7 @@ DEFAULT_CONFIG = {
     "comfyui_poll_interval": 2,
     "comfyui_workflow": "sdxl_basic",      # "sdxl_basic" | "flux_basic"
     "comfyui_checkpoint": "",               # 留空则使用工作流默认值
-    "comfyui_steps": 25,
+    "comfyui_steps": 30,
     "comfyui_cfg": 7.0,
     "comfyui_sampler": "euler_ancestral",
     "comfyui_scheduler": "normal",
@@ -58,8 +58,8 @@ DEFAULT_CONFIG = {
     ],
 
     # --- 生图参数（可被自进化调优）---
-    "whitespace_weight": 1.0,
-    "max_elements_per_image": 8,
+    "whitespace_weight": 1.2,
+    "max_elements_per_image": 6,
     "force_horizontal_whitespace_for_cover": True,
 
     # --- 尺寸映射（像素）---

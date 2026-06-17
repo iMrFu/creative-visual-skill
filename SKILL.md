@@ -41,7 +41,12 @@ AI 助理可通过终端命令行调度本 Skill：
 
 ### 1. 启动交互式向导
 ```bash
+# 对于 PowerShell 用户
 $env:PYTHONIOENCODING="utf-8"
+python -m creative_visual_skill.main --interactive
+
+# 对于 Git Bash / Linux / macOS 用户
+export PYTHONIOENCODING=utf-8
 python -m creative_visual_skill.main --interactive
 ```
 
@@ -132,11 +137,13 @@ python -m pytest creative_visual_skill/tests/ -v
   "subject": "视觉主体",
   "style": "风格模板名称",
   "composition": "构图叙事描述 (已替换 [SUBJECT])",
+  "composition_short": "CLIP 限制用短描述 (已替换 [SUBJECT])",
   "colors": ["配色1", "配色2"],
   "background": "背景材质/氛围",
   "ratio": "2.35:1",
   "negative": ["反向词"],
   "tags": ["标签1", "标签2"],
-  "examples": []
+  "examples": [],
+  "overrides": {}
 }
 ```

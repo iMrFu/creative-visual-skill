@@ -235,8 +235,12 @@ pip install -r requirements.txt
 
 ### 2. 交互式启动
 ```bash
-# 设置 UTF-8 避免 Emoji 报错
+# 对于 PowerShell 用户
 $env:PYTHONIOENCODING="utf-8"
+python -m creative_visual_skill.main --interactive
+
+# 对于 Git Bash / Linux / macOS 用户
+export PYTHONIOENCODING=utf-8
 python -m creative_visual_skill.main --interactive
 ```
 
