@@ -23,6 +23,10 @@
   "llm_provider": "openai",
   "llm_model": "gpt-4o-mini",
   "gemini_llm_model": "gemini-2.0-flash",
+  "hook_enabled": true,
+  "hook_llm_temperature": 0.7,
+  "hook_llm_max_tokens": 1200,
+  "hook_fallback_to_v1": true,
   "TARGET_KEYWORDS": [
     "保存到视觉库",
     "添加封面素材",

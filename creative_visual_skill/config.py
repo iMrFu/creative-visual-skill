@@ -47,6 +47,12 @@ DEFAULT_CONFIG = {
     "llm_model": "gpt-4o-mini",
     "gemini_llm_model": "gemini-2.0-flash",
 
+    # --- 视觉钩子设计 (V3) ---
+    "hook_enabled": True,
+    "hook_llm_temperature": 0.7,
+    "hook_llm_max_tokens": 1200,
+    "hook_fallback_to_v1": True,
+
     # --- 素材注入触发词 ---
     "TARGET_KEYWORDS": [
         "保存到视觉库",

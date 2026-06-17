@@ -102,6 +102,15 @@ def select_style(
         run_logger.warning("风格库为空，返回默认空风格")
         return StyleInfo()
 
+    # V3: 如果合并大模型调用已经匹配了风格，则直接使用
+    if use_llm and article_info.matched_style:
+        matched_name = article_info.matched_style.strip()
+        for s in styles:
+            if s.style_name.strip() == matched_name:
+                run_logger.info(f"select_style | 使用合并大模型提取的风格: 【{s.style_name}】")
+                return s
+        run_logger.warning(f"select_style | 合并大模型推荐的风格 '{matched_name}' 未在库中找到，执行重新选择")
+
     if use_llm:
         config = load_config()
 

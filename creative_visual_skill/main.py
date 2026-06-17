@@ -140,6 +140,22 @@ def run_pipeline(
         )
         print(f"  - 最佳匹配风格: 【{style_info.style_name}】")
 
+    # ---- V3 Step 2.5: 设计视觉钩子策略 ----
+    hook_payload = None
+    if config.get("hook_enabled", True):
+        print("\n[Step 2.5] 设计视觉钩子与构图策略...")
+        from .hook_designer import design_hook
+        hook_payload = design_hook(
+            article_info,
+            style_info,
+            use_llm=use_llm,
+            llm_provider=config.get("llm_provider", "openai"),
+        )
+        print(f"  - 选中钩子: 【{hook_payload.hook_type_cn}】({hook_payload.hook_type})")
+        print(f"  - 选中构图: 【{hook_payload.composition_strategy_cn}】({hook_payload.composition_strategy})")
+        if hook_payload.visual_concept_cn:
+            print(f"  - 视觉概念: {hook_payload.visual_concept_cn}")
+
     # 确定生成的比例
     ratios = []
     if ratio_type in ["cover", "both"]:
@@ -150,7 +166,7 @@ def run_pipeline(
     payloads = []
     print("\n[Step 3] 构建 JSON 提示词中台 Payload...")
     for r in ratios:
-        payload = build_payload(article_info, style_info, ratio=r)
+        payload = build_payload(article_info, style_info, ratio=r, hook_payload=hook_payload)
         payloads.append(payload)
         print(f"  - 已构建 {r} 比例的 Payload")
 

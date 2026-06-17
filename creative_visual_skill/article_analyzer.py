@@ -220,6 +220,86 @@ def _extract_subject(text: str, keywords: List[str]) -> str:
     return "抽象概念"
 
 
+def _infer_emotional_tension(text: str, keywords: List[str], emotion: str) -> dict:
+    """
+    V1 规则兜底：从文本中推导情绪张力字段。
+    策略：
+    1. emotional_core：找文中的转折句（"但"/"然而"/"可是"后面的内容）
+    2. conflict_point：找二选一句式（"要么...要么"/"不是...就是"）
+    3. curiosity_gap：找疑问句（"为什么"/"如何"/"怎么"）
+    4. empathy_anchor：找第二人称+情绪词组合（"你一定也..."/"你是不是也..."）
+    5. emotional_arc：首段情绪词 vs 尾段情绪词，构造"从X到Y"
+    """
+    tension = {
+        "emotional_core": "",
+        "conflict_point": "",
+        "curiosity_gap": "",
+        "empathy_anchor": "",
+        "emotional_arc": "",
+    }
+
+    # --- emotional_core: 转折句提取 ---
+    turn_patterns = [
+        r'[但然而可是却](.+?)[。！？\n]',
+        r'不是(.+?)，而是(.+?)[。！？]',
+    ]
+    for pat in turn_patterns:
+        matches = re.findall(pat, text)
+        if matches:
+            core = matches[0] if isinstance(matches[0], str) else matches[0][-1]
+            tension["emotional_core"] = core.strip()[:50]
+            break
+
+    # --- conflict_point: 二选一句式 ---
+    conflict_patterns = [
+        r'要么(.+?)要么(.+?)[。！？]',
+        r'不是(.+?)就是(.+?)[。！？]',
+        r'管也不是，不管也不是',
+        r'进退两难',
+        r'左右为难',
+    ]
+    for pat in conflict_patterns:
+        matches = re.findall(pat, text)
+        if matches:
+            val = matches[0] if isinstance(matches[0], str) else "".join(matches[0])
+            tension["conflict_point"] = val.strip()[:50]
+            break
+
+    # --- curiosity_gap: 疑问句提取 ---
+    question_matches = re.findall(r'(为什么|如何|怎么|凭什么|难道)(.+?)[？\?]', text)
+    if question_matches:
+        tension["curiosity_gap"] = (question_matches[0][0] + question_matches[0][1])[:50]
+    else:
+        any_q = re.findall(r'(.+?)[？\?]', text)
+        if any_q:
+            tension["curiosity_gap"] = any_q[0][:50]
+
+    # --- empathy_anchor: 第二人称+情绪词 ---
+    empathy_patterns = [
+        r'你(一定也|是不是也|也曾|也许也)(.+?)[。！？]',
+        r'我们(都|也)(.+?)[。！？]',
+    ]
+    for pat in empathy_patterns:
+        matches = re.findall(pat, text)
+        if matches:
+            tension["empathy_anchor"] = ("你" + matches[0][0] + matches[0][1])[:50]
+            break
+
+    # --- emotional_arc: 首尾段情绪词对比 ---
+    paragraphs = [p.strip() for p in text.split('\n') if p.strip()]
+    if len(paragraphs) >= 2:
+        first_emotion = _detect_emotion(paragraphs[0], keywords)
+        last_emotion = _detect_emotion(paragraphs[-1], keywords)
+        if first_emotion != last_emotion:
+            tension["emotional_arc"] = f"从{first_emotion}到{last_emotion}"
+        else:
+            tension["emotional_arc"] = f"始终{first_emotion}"
+    elif paragraphs:
+        tension["emotional_arc"] = _detect_emotion(paragraphs[0], keywords)
+
+    return tension
+
+
 def _analyze_rule_based(text: str) -> ArticleInfo:
     """V1 规则分析入口"""
     if not text or not text.strip():
@@ -236,6 +316,9 @@ def _analyze_rule_based(text: str) -> ArticleInfo:
     emotion = _detect_emotion(text, keywords)
     subject = _extract_subject(text, keywords)
 
+    # V3: 规则推导情绪张力
+    tension = _infer_emotional_tension(text, keywords, emotion)
+
     run_logger.info(
         f"[V1 规则分析] topic={topic}, emotion={emotion}, "
         f"subject={subject}, keywords={keywords[:5]}"
@@ -245,7 +328,13 @@ def _analyze_rule_based(text: str) -> ArticleInfo:
         emotion=emotion,
         keywords=keywords,
         subject=subject,
+        emotional_core=tension["emotional_core"],
+        conflict_point=tension["conflict_point"],
+        curiosity_gap=tension["curiosity_gap"],
+        empathy_anchor=tension["empathy_anchor"],
+        emotional_arc=tension["emotional_arc"],
     )
+
 
 
 # ===========================================================================
@@ -293,26 +382,116 @@ def _parse_llm_json(raw_text: str) -> Optional[dict]:
     return None
 
 
+def _build_merged_llm_system_prompt() -> str:
+    """
+    动态构建五合一大合并大模型系统提示词，
+    将风格库、钩子库定义注入上下文，并声明美学防走样和封面排版规则。
+    """
+    try:
+        from .style_library import list_styles
+        from .hook_designer import list_hook_strategies
+
+        styles = list_styles()
+        hooks, comp_strategies = list_hook_strategies()
+
+        # 简化风格列表以节约 Token
+        styles_summary = []
+        for s in styles:
+            styles_summary.append({
+                "style_name": s.style_name,
+                "colors": s.colors,
+                "background": s.background,
+                "composition_template": s.composition,
+                "tags": s.tags
+            })
+
+        hooks_summary = []
+        for h in hooks:
+            hooks_summary.append({
+                "hook_type": h["hook_type"],
+                "hook_type_cn": h["hook_type_cn"],
+                "principle": h["principle"],
+                "compatible_composition_strategies": h["compatible_composition_strategies"]
+            })
+
+        comp_summary = []
+        for c in comp_strategies:
+            comp_summary.append({
+                "composition_strategy": c["composition_strategy"],
+                "composition_strategy_cn": c["composition_strategy_cn"],
+                "principle": c["principle"],
+                "layout_keywords": c["layout_keywords"]
+            })
+    except Exception as e:
+        run_logger.warning(f"动态构建大合并 Prompt 失败: {e}，将降级到静态系统提示词。")
+        return _LLM_SYSTEM_PROMPT
+
+    prompt = (
+        "你是一位顶级中文文章分析专家、视觉创意总监和读者点击心理学专家。\n"
+        "你的任务是：深入分析给定的中文文章，为其设计一张能够引发情感共鸣、制造悬念、有极强“点击驱动力”的公众号封面视觉概念 JSON，并将选定的艺术画风完美融入其中（美学融合保护）。\n\n"
+        "【分析与设计步骤】\n"
+        "1. 提取基础属性 (topic, emotion, keywords, subject)。\n"
+        "2. 提取文章的情绪张力 (emotional_core, conflict_point, curiosity_gap, empathy_anchor, emotional_arc)。\n"
+        "3. 匹配最合适的风格：从以下可用的风格列表中选择一个 (必须是已有的名字，不可凭空捏造)。\n"
+        "4. 选择一个最具点击吸引力的视觉钩子策略，以及与其兼容的一个构图策略。\n"
+        "5. 完全重写英文视觉概念 (visual_concept) 并实施“美学融合保护”：\n"
+        "   - 重写的 visual_concept（英文）必须直接用作生图模型的核心提示词描述。\n"
+        "   - 【美学融合保护】：重写的概念绝不能只描述构图与动作。必须将所选风格的媒介特质（如 watercolor elements, cyber neon glow, classic oil texture, scrapbook paper collage）、配色方案（colors）和背景基调（background）以英文修饰词的形式自然、有机地融入视觉概念的描述中。让重写后的概念在保留原始风格画风基底的基础上，加入钩子故事性。\n"
+        "   - 【封面排版留白】：对于 2.35:1 比例，必须在右侧或左侧预留大面积用于放置标题的空白（whitespace / large empty space for text overlay）。\n\n"
+        "【可用风格列表】\n"
+        f"{json.dumps(styles_summary, ensure_ascii=False, indent=2)}\n\n"
+        "【可用钩子策略】\n"
+        f"{json.dumps(hooks_summary, ensure_ascii=False, indent=2)}\n\n"
+        "【可用构图策略】\n"
+        f"{json.dumps(comp_summary, ensure_ascii=False, indent=2)}\n\n"
+        "【输出 JSON 格式要求】\n"
+        "必须输出严格符合以下结构的 JSON 字符串（不要有任何 markdown 标记或前导解释文字）：\n"
+        "{\n"
+        '  "topic": "主题类别，必须是 科技/教育/情绪\\/心理/商业\\/金融/生活\\/健康/文化\\/艺术/社会\\/政治/旅行\\/美食 之一",\n'
+        '  "emotion": "情感基调，必须是 温暖/严肃/冷静/激昂/悲伤/幽默/浪漫/治愈 之一",\n'
+        '  "keywords": ["关键词1", "关键词2", ...],\n'
+        '  "subject": "核心视觉主体名词短语（2-6字）",\n'
+        '  "emotional_core": "最引发共鸣/最刺痛的一句话（20字以内）",\n'
+        '  "conflict_point": "揭示的核心矛盾，若无则留空",\n'
+        '  "curiosity_gap": "读者想知道的信息缺口，若无则留空",\n'
+        '  "empathy_anchor": "引发“这说我呢”共鸣的一句话，若无则留空",\n'
+        '  "emotional_arc": "情绪走向，格式如“从X到Y”，若无则留空",\n'
+        '  "matched_style": "选中的风格名称 (必须是风格列表中精确的名字)",\n'
+        '  "hook_payload": {\n'
+        '    "hook_type": "选中的钩子类型 hook_type",\n'
+        '    "hook_type_cn": "选中的钩子中文名",\n'
+        '    "composition_strategy": "选中的构图策略名称",\n'
+        '    "composition_strategy_cn": "构图策略中文名",\n'
+        '    "visual_concept": "美学融合保护下重写的完整英文视觉概念描述，直接用于生图，包含媒介、构图、主体和画面细节",\n'
+        '    "visual_concept_cn": "中文视觉概念摘要",\n'
+        '    "hook_rationale": "策略说明：解释该钩子如何企合张力，以及如何混合与保留所选风格美学的"\n'
+        '  }\n'
+        "}"
+    )
+    return prompt
+
+
 def _analyze_with_openai(text: str, config: dict) -> Optional[ArticleInfo]:
-    """调用 OpenAI API 分析文章"""
+    """调用 OpenAI API 分析文章 (大合并调用)"""
     try:
         import openai
 
         model = config.get("llm_model", "gpt-4o-mini")
         base_url = config.get("openai_base_url", "") or None
-        client = openai.OpenAI(base_url=base_url)  # 从环境变量读取 API key
+        client = openai.OpenAI(base_url=base_url)
 
-
-        run_logger.info(f"[V2 OpenAI] 使用模型 {model} 分析文章...")
+        system_prompt = _build_merged_llm_system_prompt()
+        run_logger.info(f"[V2 OpenAI] 使用模型 {model} 执行大合并分析与视觉钩子设计...")
 
         response = client.chat.completions.create(
             model=model,
             messages=[
-                {"role": "system", "content": _LLM_SYSTEM_PROMPT},
-                {"role": "user", "content": f"请分析以下文章：\n\n{text[:4000]}"},
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"请分析并设计以下文章：\n\n{text[:4000]}"},
             ],
             temperature=0.3,
-            max_tokens=500,
+            max_tokens=1200,
+            response_format={"type": "json_object"} if model != "gpt-3.5-turbo" else None,
         )
 
         raw = response.choices[0].message.content
@@ -320,8 +499,7 @@ def _analyze_with_openai(text: str, config: dict) -> Optional[ArticleInfo]:
         if parsed:
             result = ArticleInfo.from_dict(parsed)
             run_logger.info(
-                f"[V2 OpenAI] 分析成功 — topic={result.topic}, "
-                f"emotion={result.emotion}, subject={result.subject}"
+                f"[V2 OpenAI] 大合并分析与设计成功 — topic={result.topic}, matched_style={result.matched_style}"
             )
             return result
         else:
@@ -337,23 +515,30 @@ def _analyze_with_openai(text: str, config: dict) -> Optional[ArticleInfo]:
 
 
 def _analyze_with_gemini(text: str, config: dict) -> Optional[ArticleInfo]:
-    """调用 Gemini API 分析文章"""
+    """调用 Gemini API 分析文章 (大合并调用)"""
     try:
         from google import genai
+        from google.genai import types
 
         model_name = config.get("gemini_llm_model", "gemini-2.0-flash")
-        client = genai.Client()  # 从环境变量读取 API key
+        client = genai.Client()
 
-        run_logger.info(f"[V2 Gemini] 使用模型 {model_name} 分析文章...")
+        system_prompt = _build_merged_llm_system_prompt()
+        run_logger.info(f"[V2 Gemini] 使用模型 {model_name} 执行大合并分析与视觉钩子设计...")
 
         full_prompt = (
-            f"{_LLM_SYSTEM_PROMPT}\n\n"
-            f"请分析以下文章：\n\n{text[:4000]}"
+            f"{system_prompt}\n\n"
+            f"请分析并设计以下文章：\n\n{text[:4000]}"
         )
 
         response = client.models.generate_content(
             model=model_name,
             contents=full_prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.3,
+                max_tokens=1200,
+            )
         )
 
         raw = response.text
@@ -361,8 +546,7 @@ def _analyze_with_gemini(text: str, config: dict) -> Optional[ArticleInfo]:
         if parsed:
             result = ArticleInfo.from_dict(parsed)
             run_logger.info(
-                f"[V2 Gemini] 分析成功 — topic={result.topic}, "
-                f"emotion={result.emotion}, subject={result.subject}"
+                f"[V2 Gemini] 大合并分析与设计成功 — topic={result.topic}, matched_style={result.matched_style}"
             )
             return result
         else:

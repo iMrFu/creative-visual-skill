@@ -13,10 +13,11 @@
 * **素材积累与演进**：支持“风格内容库”沉淀（Markdown 文件 + 物理素材图）以及基于用户真实反馈的配置“自进化”调优。
 
 ### 🏷️ 版本控制
-* **当前版本**：`1.0.0`
+* **当前版本**：`1.1.0` (V3 升级)
 * **版本特征**：
-  * **V1（规则驱动级）**：已完整实现并打通。支持基于 `jieba` 中文分词的文章分析、基于标签交集的本地风格推荐、ComfyUI 宽幅布局翻译、基于特定触发词的风格注入确权、以及规则匹配自进化。
-  * **V2（大模型增强级）**：已完整实现。在带上 `--use-llm` 命令行参数时，可启用基于大模型智能体的文章主体提取、**LLM 视觉创意总监级风格自动匹配与创意策划**、大模型风格结构化解析生成、以及多模态 Agent 诊断与双轨自进化。
+  * **V1（规则驱动级）**：基于 `jieba` 分词进行主题情绪分析与分词交集风格匹配，新增情绪张力规则粗提取和 V1 钩子拼接美学保护。
+  * **V2（大模型增强级）**：智能体视觉创意路由、自愈式素材注入及多模态审计。
+  * **V3（视觉钩子与点击驱动力级）**：全新引入。在大合并调用（五合一极速模式）下，一次大模型请求同时实现分析、匹配、钩子挑选和英文视觉概念重写。具有严格的**“美学融合保护”**与**“封面排版留白”**约束，在保证画面故事冲突张力的同时阻断风格跑偏，并配备完善的规则兜底机制。
 
 ---
 
@@ -31,20 +32,22 @@
 └── creative_visual_skill/      # CVSkill 能力模块根目录
     ├── main.py                 # CLI 主入口、交互式向导及 Agent 审计确权系统
     ├── config.py               # 全局配置加载与写入模块
-    ├── config.json             # 动态重写的运行时配置文件 (声明 "version": "1.0.0")
-    ├── utils.py                # 核心数据类与辅助工具 (版本声明 "1.0.0")
-    ├── article_analyzer.py     # 模块A：文章分析器 (V1分词 / V2大模型分析)
-    ├── style_library.py        # 模块B：风格库管理器 (Markdown JSON 解析与匹配评分)
-    ├── json_builder.py         # 模块C：中台 Payload 构建器
+    ├── config.json             # 动态重写的运行时配置文件
+    ├── utils.py                # 核心数据类与辅助工具 (含 HookPayload 结构)
+    ├── article_analyzer.py     # 模块A：文章分析器 (V3 支持大合并 LLM 调用与张力规则提取)
+    ├── style_library.py        # 模块B：风格库管理器
+    ├── hook_designer.py        # [NEW] 模块B.5：视觉钩子设计器 (V3 情绪映射与美学保护拼接)
+    ├── json_builder.py         # 模块C：中台 Payload 构建器 (V3 支持钩子重写 composition)
     ├── model_adapter.py        # 模块D：跨提供商提示词适配转译器
-    ├── image_runner.py         # 模块E：生图执行器 (ComfyUI 串行 / OpenAI / Gemini)
+    ├── image_runner.py         # 模块E：生图执行器
     ├── save_style.py           # 模块F：素材注入与二次确权流程
     ├── evolver.py              # 模块G：规则/LLM自进化优化模块
     ├── requirements.txt        # 项目依赖
     │
-    ├── styles/                 # 风格素材库
-    │   ├── style_library.md    # 风格库模板定义 (预置 6 大主流风格)
-    │   └── image/              # 预置 6 大风格的完整样例图片与用户素材目录
+    ├── styles/                 # 风格与策略库
+    │   ├── style_library.md    # 风格库模板定义
+    │   ├── hook_library.md     # [NEW] 视觉钩子与构图策略定义 (7 大钩子 + 4 大构图)
+    │   └── image/              # 预置风格完整样例图片
     │
     ├── workflows/              # ComfyUI API 工作流模板
     │   ├── sdxl_basic.json     # SDXL 基础工作流 API
@@ -54,9 +57,9 @@
     │   ├── run.log             # 运行日志
     │   └── evolution.log       # 自进化日志
     │
-    ├── output/                 # 最终生成的图片输出目录 (附 .gitkeep)
+    ├── output/                 # 最终生成的图片输出目录
     │
-    └── tests/                  # 完备单元测试套件 (包含 32 个 pytest 用例)
+    └── tests/                  # 完备单元测试套件 (新增 test_hook_designer.py, 59 个用例)
 ```
 
 ---
@@ -66,9 +69,10 @@
 ```mermaid
 graph TD
     A[自媒体文章输入] --> B[模块 A: 文章分析器]
-    B -->|提取 ArticleInfo| C[模块 B: 风格库管理器]
-    C -->|匹配最佳 StyleInfo| D[模块 C: JSON中台构建器]
-    D -->|输出中台 PromptPayload| E[模块 D: 模型适配器]
+    B -->|提取 ArticleInfo (含情绪张力)| C[模块 B: 风格库管理器]
+    C -->|匹配最佳 StyleInfo| K[模块 B.5: 视觉钩子设计器]
+    K -->|输出 HookPayload| D[模块 C: JSON中台构建器]
+    D -->|替换并重写 composition| E[模块 D: 模型适配器]
     E -->|转译格式/尺寸布局| F[模块 E: 生图执行器]
     F -->|串行/并发队列调度| G[多后端生图通道: ComfyUI/OpenAI/Gemini]
     G -->|输出图像| H[Agent 主动视觉审计]
@@ -248,5 +252,5 @@ python -m creative_visual_skill.main --interactive
 ```bash
 python -m pytest creative_visual_skill/tests/ -v
 ```
-*43 项断言测试全数通过即可确认安装完好。*
+*59 项单元与集成测试全数通过即可确认系统升级完好且具备向下兼容弹性。*
 

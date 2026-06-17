@@ -6,7 +6,7 @@ import os
 import sys
 import pytest
 
-from creative_visual_skill.utils import ArticleInfo, StyleInfo, PromptPayload
+from creative_visual_skill.utils import ArticleInfo, StyleInfo, PromptPayload, HookPayload
 from creative_visual_skill.json_builder import build_payload
 
 
@@ -113,4 +113,28 @@ class TestBuildPayloadBackgroundReplacement:
         assert "[SUBJECT]" not in payload.background
         assert sample_article.subject in payload.background
         assert "a rainy street reflecting a futuristic robot arm assembling microchips's shadow" in payload.background
+
+
+class TestBuildPayloadWithHook:
+    """V3: 验证视觉钩子重写 composition"""
+
+    def test_build_payload_with_hook_rewrites_composition(self, sample_article, sample_style):
+        hook = HookPayload(
+            hook_type="scale",
+            hook_type_cn="尺度悬殊",
+            composition_strategy="negative_space",
+            composition_strategy_cn="留白构图",
+            visual_concept="A tiny cute robot arm standing alone in a vast empty dark city grid",
+            visual_concept_cn="渺小机械臂在空旷霓虹城市中",
+            hook_rationale="test",
+        )
+        payload = build_payload(sample_article, sample_style, ratio="2.35:1", hook_payload=hook)
+
+        # 验证 composition 已经被替换为视觉钩子的 concept
+        assert payload.composition == "A tiny cute robot arm standing alone in a vast empty dark city grid"
+        # 验证原来的 composition 被丢弃
+        assert "neon-lit cityscape" not in payload.composition
+        # 验证 short composition 被更新
+        assert payload.composition_short == "A tiny cute robot arm standing alone in a vast empty dark city grid"
+
 

@@ -55,6 +55,17 @@ class ArticleInfo:
     keywords: List[str] = field(default_factory=list)  # 核心关键词
     subject: str = ""        # 视觉主体语义
 
+    # ---- V3 新增：情绪张力字段 ----
+    emotional_core: str = ""       # 文章最刺痛/最共鸣的点
+    conflict_point: str = ""       # 核心矛盾/冲突
+    curiosity_gap: str = ""        # 好奇心/信息缺口
+    empathy_anchor: str = ""       # 共鸣锚点
+    emotional_arc: str = ""        # 情绪走向 (从X到Y)
+
+    # ---- V3 新增：合并调用输出字段 (仅 LLM 填充，V1 留空) ----
+    matched_style: str = ""        # LLM 匹配到的风格名称
+    hook_payload_dict: Dict[str, Any] = field(default_factory=dict) # 序列化的钩子策略数据
+
     def to_dict(self) -> dict:
         return asdict(self)
 
@@ -65,7 +76,43 @@ class ArticleInfo:
             emotion=data.get("emotion", ""),
             keywords=data.get("keywords", []),
             subject=data.get("subject", ""),
+            # V3
+            emotional_core=data.get("emotional_core", ""),
+            conflict_point=data.get("conflict_point", ""),
+            curiosity_gap=data.get("curiosity_gap", ""),
+            empathy_anchor=data.get("empathy_anchor", ""),
+            emotional_arc=data.get("emotional_arc", ""),
+            matched_style=data.get("matched_style", ""),
+            hook_payload_dict=data.get("hook_payload_dict") or data.get("hook_payload") or {},
         )
+
+
+@dataclass
+class HookPayload:
+    """钩子策略选择结果"""
+    hook_type: str = ""               # 钩子策略名称 (如 "contrast")
+    hook_type_cn: str = ""            # 钩子中文名 (如 "对比矛盾")
+    composition_strategy: str = ""    # 构图策略名称 (如 "negative_space")
+    composition_strategy_cn: str = ""  # 构图策略中文名 (如 "留白构图")
+    visual_concept: str = ""          # 重写后的完整英文视觉概念 (含美学融合)
+    visual_concept_cn: str = ""       # 中文概念摘要
+    hook_rationale: str = ""          # 策略选择理由
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "HookPayload":
+        return cls(
+            hook_type=data.get("hook_type", ""),
+            hook_type_cn=data.get("hook_type_cn", ""),
+            composition_strategy=data.get("composition_strategy", ""),
+            composition_strategy_cn=data.get("composition_strategy_cn", ""),
+            visual_concept=data.get("visual_concept", ""),
+            visual_concept_cn=data.get("visual_concept_cn", ""),
+            hook_rationale=data.get("hook_rationale", ""),
+        )
+
 
 
 @dataclass

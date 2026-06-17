@@ -70,30 +70,34 @@ def build_payload(
     article_info: ArticleInfo,
     style_info: StyleInfo,
     ratio: str = "2.35:1",
+    hook_payload = None,
 ) -> PromptPayload:
     """
     构建 PromptPayload —— JSON 中台唯一入口。
 
-    处理逻辑:
-    1. 将 StyleInfo.composition 中的 [SUBJECT] 占位符替换为
-       article_info.subject（实际视觉主体语义）。
-    2. 合并 ArticleInfo 与 StyleInfo 的全部字段，生成 PromptPayload。
-    3. 使用传入的 ratio（默认 '2.35:1' 封面比例）。
-    4. 检索防错记忆库，获取历史优化覆盖参数并写入 payload。
-
-    Args:
-        article_info: 文章分析结果，包含 topic / emotion / keywords / subject。
-        style_info:   风格模板结构，包含 composition / colors / background 等。
-        ratio:        画面宽高比，'2.35:1'（封面）或 '16:9'（内容图）等。
-
-    Returns:
-        PromptPayload: 填充完毕的提示词中台结构。
+    V3 变更:
+    - 引入可选的 hook_payload 参数。
+    - 若 hook_payload 存在且其 visual_concept 非空，则完全替换原始的 composition
+      和 composition_short，注入具有高点击驱动力的视觉钩子概念。
     """
     # ---- 1. 替换 [SUBJECT] 占位符 ----
     placeholder = style_info.subject_placeholder or "[SUBJECT]"
     composition = style_info.composition.replace(placeholder, article_info.subject)
     background = style_info.background.replace(placeholder, article_info.subject)
     composition_short = (style_info.composition_short or "").replace(placeholder, article_info.subject)
+
+    # ---- 2. V3: 视觉钩子动态重写 ----
+    if hook_payload and hook_payload.visual_concept:
+        composition = hook_payload.visual_concept
+        if len(composition) > 400:
+            composition_short = composition[:397] + "..."
+        else:
+            composition_short = composition
+        run_logger.info(
+            "build_payload | composition 已被视觉钩子 [%s](%s) 动态重写",
+            hook_payload.hook_type_cn,
+            hook_payload.hook_type,
+        )
 
     run_logger.info(
         "build_payload | subject='%s', style='%s', ratio='%s'",
@@ -107,10 +111,10 @@ def build_payload(
         composition_short,
     )
 
-    # ---- 2. 检索记忆库获取覆盖项 ----
+    # ---- 3. 检索记忆库获取覆盖项 ----
     overrides = check_memory_for_overrides(style_info.style_name)
 
-    # ---- 3. 组装 PromptPayload ----
+    # ---- 4. 组装 PromptPayload ----
     payload = PromptPayload(
         subject=article_info.subject,
         style=style_info.style_name,
@@ -133,4 +137,5 @@ def build_payload(
     )
 
     return payload
+
 
