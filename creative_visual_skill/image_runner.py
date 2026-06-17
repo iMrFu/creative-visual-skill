@@ -82,7 +82,13 @@ def _run_local(payload: PromptPayload) -> ImageResult:
     from model_adapter import build_prompt
 
     config = load_config()
+    # Apply dynamic memory overrides if present in payload
+    if hasattr(payload, "overrides") and payload.overrides:
+        config.update(payload.overrides)
+        run_logger.info(f"应用记忆库动态覆盖参数: {payload.overrides}")
+
     positive, negative = build_prompt("local", payload)
+
 
     # ---- 加载工作流模板 ----
     workflow_name = config.get("comfyui_workflow", "sdxl_basic")
@@ -200,7 +206,13 @@ def _run_openai(payload: PromptPayload) -> ImageResult:
         return ImageResult(success=False, error_message="openai SDK 未安装，请 pip install openai")
 
     config = load_config()
+    # Apply dynamic memory overrides if present in payload
+    if hasattr(payload, "overrides") and payload.overrides:
+        config.update(payload.overrides)
+        run_logger.info(f"应用记忆库动态覆盖参数: {payload.overrides}")
+
     prompt_text = build_prompt("openai", payload)
+
 
     model = config.get("openai_model", "gpt-image-1")
 
@@ -322,7 +334,13 @@ def _run_gemini(payload: PromptPayload) -> ImageResult:
         )
 
     config = load_config()
+    # Apply dynamic memory overrides if present in payload
+    if hasattr(payload, "overrides") and payload.overrides:
+        config.update(payload.overrides)
+        run_logger.info(f"应用记忆库动态覆盖参数: {payload.overrides}")
+
     prompt_text = build_prompt("gemini", payload)
+
 
     model = config.get("gemini_model", "gemini-2.0-flash-preview-image-generation")
 

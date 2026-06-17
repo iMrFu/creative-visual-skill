@@ -3,10 +3,18 @@ Creative Visual Skill — Module F: 素材注入 & 二次确认
 检测用户保存意图 → 解析风格信息 → 二次确认 → 存入风格库
 """
 
+import sys
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, OSError):
+        pass
+
 import os
 import re
 import json
 from typing import Optional
+
 
 from utils import StyleInfo, run_logger
 from config import load_config

@@ -22,12 +22,25 @@ STYLES_IMAGE_DIR = os.path.join(STYLES_DIR, "image")
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, "output")
 LOGS_DIR = os.path.join(PROJECT_ROOT, "logs")
 WORKFLOWS_DIR = os.path.join(PROJECT_ROOT, "workflows")
+MEMORY_DIR = os.path.join(PROJECT_ROOT, "memory")
+MEMORY_HISTORY_DIR = os.path.join(MEMORY_DIR, "history")
+MEMORY_BAD_CASES_DIR = os.path.join(MEMORY_DIR, "bad_cases")
 
 # ---------------------------------------------------------------------------
 # 确保关键目录存在
 # ---------------------------------------------------------------------------
-for _dir in [STYLES_DIR, STYLES_IMAGE_DIR, OUTPUT_DIR, LOGS_DIR, WORKFLOWS_DIR]:
+for _dir in [
+    STYLES_DIR,
+    STYLES_IMAGE_DIR,
+    OUTPUT_DIR,
+    LOGS_DIR,
+    WORKFLOWS_DIR,
+    MEMORY_DIR,
+    MEMORY_HISTORY_DIR,
+    MEMORY_BAD_CASES_DIR,
+]:
     os.makedirs(_dir, exist_ok=True)
+
 
 
 # ===========================================================================
@@ -96,6 +109,7 @@ class PromptPayload:
     negative: List[str] = field(default_factory=list)
     tags: List[str] = field(default_factory=list)
     examples: List[str] = field(default_factory=list)
+    overrides: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -112,7 +126,9 @@ class PromptPayload:
             negative=data.get("negative", []),
             tags=data.get("tags", []),
             examples=data.get("examples", []),
+            overrides=data.get("overrides", {}),
         )
+
 
 
 @dataclass

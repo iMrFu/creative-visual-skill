@@ -11,6 +11,61 @@ from utils import ArticleInfo, StyleInfo, PromptPayload, run_logger
 # 核心构建函数
 # ===========================================================================
 
+def check_memory_for_overrides(style_name: str) -> dict:
+    """
+    检查 memory/history 中是否有针对特定风格的优化经验记录。
+    如果存在多条记录，按时间顺序（即文件名顺序）合并更新。
+
+    Args:
+        style_name: 当前匹配到的风格名称
+
+    Returns:
+        dict: 合并后的配置覆盖参数字典，如 {"whitespace_weight": 1.4}
+    """
+    import os
+    from utils import MEMORY_HISTORY_DIR, read_json_file
+
+    overrides = {}
+    if not os.path.exists(MEMORY_HISTORY_DIR):
+        return overrides
+
+    try:
+        files = sorted([f for f in os.listdir(MEMORY_HISTORY_DIR) if f.endswith(".json")])
+        matched_count = 0
+        reasons = []
+
+        for filename in files:
+            path = os.path.join(MEMORY_HISTORY_DIR, filename)
+            record = read_json_file(path)
+            
+            if record.get("style_name") == style_name:
+                action = record.get("action_taken", {})
+                updates = action.get("config_updates", {})
+                if updates:
+                    overrides.update(updates)
+                    matched_count += 1
+                    desc = record.get("issue_description", "")
+                    if desc:
+                        reasons.append(desc)
+
+        if matched_count > 0:
+            run_logger.info(
+                f"记忆库检索成功：为风格「{style_name}」找到 {matched_count} 条历史优化记录。已应用调优参数: {overrides}"
+            )
+            # 在控制台高亮打印提示
+            print("\n" + "💡" * 30)
+            print(f"CVSkill 提示：检测到该风格历史生图曾出现过以下问题：")
+            for r in set(reasons):
+                print(f"  - {r}")
+            print(f"系统已自动应用历史调优记忆，临时重写本次生图参数: {overrides}")
+            print("💡" * 30 + "\n")
+
+    except Exception as e:
+        run_logger.error(f"检索记忆库失败: {e}")
+
+    return overrides
+
+
 def build_payload(
     article_info: ArticleInfo,
     style_info: StyleInfo,
@@ -24,6 +79,7 @@ def build_payload(
        article_info.subject（实际视觉主体语义）。
     2. 合并 ArticleInfo 与 StyleInfo 的全部字段，生成 PromptPayload。
     3. 使用传入的 ratio（默认 '2.35:1' 封面比例）。
+    4. 检索防错记忆库，获取历史优化覆盖参数并写入 payload。
 
     Args:
         article_info: 文章分析结果，包含 topic / emotion / keywords / subject。
@@ -48,7 +104,10 @@ def build_payload(
         "build_payload | composition after replacement: '%s'", composition
     )
 
-    # ---- 2. 组装 PromptPayload ----
+    # ---- 2. 检索记忆库获取覆盖项 ----
+    overrides = check_memory_for_overrides(style_info.style_name)
+
+    # ---- 3. 组装 PromptPayload ----
     payload = PromptPayload(
         subject=article_info.subject,
         style=style_info.style_name,
@@ -59,6 +118,7 @@ def build_payload(
         negative=list(style_info.negative),
         tags=list(style_info.tags),
         examples=list(style_info.examples),
+        overrides=overrides,
     )
 
     run_logger.info(
@@ -69,3 +129,4 @@ def build_payload(
     )
 
     return payload
+

@@ -11,8 +11,16 @@ import time
 import argparse
 from dotenv import load_dotenv
 
+# Fix Windows console encoding for Unicode emoji
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, OSError):
+        pass
+
 # 加载环境变量（如 API Keys）
 load_dotenv()
+
 
 # 确保当前目录在 sys.path 中，以便直接运行
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -33,7 +41,13 @@ from style_library import list_styles, select_style
 from json_builder import build_payload
 from image_runner import run_image_job, run_batch_jobs
 from save_style import process_save_request, check_save_trigger
-from evolver import trigger_evolution, evaluate_generation, apply_evolution, get_evolution_history
+from evolver import (
+    trigger_evolution,
+    evaluate_generation,
+    apply_evolution,
+    get_evolution_history,
+    record_evolution_memory,
+)
 
 
 def print_banner():
@@ -215,6 +229,14 @@ def run_pipeline(
                     confirm = _safe_readline("  ❓ 是否同意 Agent 自动修改配置文件并应用？(y/n): ").lower()
                     if confirm in ("y", "yes"):
                         apply_evolution(proposed_changes)
+                        # Record the learning experience in memory library
+                        record_evolution_memory(
+                            style_name=payload.style,
+                            payload=payload,
+                            issue_description=explanation,
+                            proposed_changes=proposed_changes,
+                            bad_image_path=res.image_path,
+                        )
                         print("  ✅ 配置已成功更新并记录！再次生成时将应用新参数。")
                     else:
                         print("  ❌ 已取消，未修改任何配置参数。")

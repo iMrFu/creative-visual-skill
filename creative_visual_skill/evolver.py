@@ -15,6 +15,10 @@ from utils import (
     evolution_logger,
     LOGS_DIR,
     read_text_file,
+    MEMORY_HISTORY_DIR,
+    MEMORY_BAD_CASES_DIR,
+    copy_file,
+    generate_timestamped_filename,
 )
 from config import load_config, update_config
 
@@ -484,3 +488,78 @@ def get_evolution_history() -> List[dict]:
                 history.append({"raw": line})
 
     return history
+
+
+def record_evolution_memory(
+    style_name: str,
+    payload: PromptPayload,
+    issue_description: str,
+    proposed_changes: dict,
+    bad_image_path: str = None,
+) -> str:
+    """
+    当触发自进化配置参数更新时，将对应的“教训记录”以结构化 JSON 保存至 memory/history 目录，
+    并把引发问题的坏图片拷贝至 memory/bad_cases 目录下。
+
+    Args:
+        style_name: 发生问题的风格模板名称
+        payload: 生图时的中台 PromptPayload
+        issue_description: 用户的吐槽反馈或 Agent 视觉诊断内容
+        proposed_changes: 本次调优修改的参数增量/目标值
+        bad_image_path: (可选) 引发抱怨的 AI 生成的坏图文件路径
+
+    Returns:
+        保存的 JSON 文件绝对路径，若失败返回空字符串
+    """
+    if not style_name:
+        style_name = payload.style or "未知风格"
+
+    # 1. 如果提供了坏图，且该图片在本地存在，则将其拷贝至 memory/bad_cases/ 下，使用时间戳重命名
+    saved_bad_image_ref = ""
+    if bad_image_path and os.path.exists(bad_image_path):
+        try:
+            _, ext = os.path.splitext(bad_image_path)
+            ext = ext if ext else ".png"
+            new_bad_img_name = generate_timestamped_filename(prefix="bad_ref", ext=ext)
+            dst_bad_img_path = os.path.join(MEMORY_BAD_CASES_DIR, new_bad_img_name)
+            copy_file(bad_image_path, dst_bad_img_path)
+            # 记录相对或绝对路径，这里使用相对于项目根目录的相对路径
+            saved_bad_image_ref = os.path.join("creative_visual_skill", "memory", "bad_cases", new_bad_img_name)
+            run_logger.info(f"坏图案例已保存至记忆库: {saved_bad_image_ref}")
+        except Exception as e:
+            run_logger.error(f"复制坏图至记忆库失败: {e}")
+
+    # 2. 组装 JSON 记录
+    timestamp = datetime.now().isoformat()
+    record = {
+        "timestamp": timestamp,
+        "style_name": style_name,
+        "article_subject": payload.subject,
+        "prompt_used": payload.composition,
+        "config_state_before": {
+            "whitespace_weight": load_config().get("whitespace_weight", 1.2),
+            "max_elements_per_image": load_config().get("max_elements_per_image", 6),
+            "comfyui_steps": load_config().get("comfyui_steps", 30),
+            "comfyui_cfg": load_config().get("comfyui_cfg", 7.0),
+        },
+        "bad_image_ref": saved_bad_image_ref,
+        "issue_type": "skill" if proposed_changes else "model",
+        "issue_description": issue_description,
+        "action_taken": {
+            "config_updates": proposed_changes
+        }
+    }
+
+    # 3. 写入 json 文件，文件名如 memory_ref_2026xxxx_xxxxxx.json
+    filename = generate_timestamped_filename(prefix="memory_ref", ext=".json")
+    save_path = os.path.join(MEMORY_HISTORY_DIR, filename)
+
+    try:
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
+        run_logger.info(f"已向记忆库写入问题记录: {save_path}")
+        return save_path
+    except Exception as e:
+        run_logger.error(f"写入记忆库记录失败: {e}")
+        return ""
+
